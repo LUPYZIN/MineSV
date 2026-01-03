@@ -1,2 +1,0 @@
-# MineSV
-Hospedar Servers
