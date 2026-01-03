@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Servidor - MineHost</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/732/732244.png">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup,
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc,
+            serverTimestamp,
+            doc,
+            setDoc
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { 
+            getStorage,
+            ref,
+            uploadBytes,
+            getDownloadURL
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwgA3wphz-vgQgiN1S9evAxZ5R9r6qhac",
+            authDomain: "minesv-5760d.firebaseapp.com",
+            projectId: "minesv-5760d",
+            storageBucket: "minesv-5760d.firebasestorage.app",
+            messagingSenderId: "1028898660834",
+            appId: "1:1028898660834:web:19399da70912b70737d9bb",
+            measurementId: "G-VVXNMFCVLK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const provider = new GoogleAuthProvider();
+
+        // Make Firebase available globally
+        window.firebase = {
+            app,
+            auth,
+            db,
+            storage,
+            provider,
+            signInWithPopup,
+            onAuthStateChanged,
+            collection,
+            addDoc,
+            serverTimestamp,
+            doc,
+            setDoc,
+            ref,
+            uploadBytes,
+            getDownloadURL
+        };
+    </script>
+    
+    <!-- Fontes -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* VARIÁVEIS E RESET */
+        :root {
+            --primary: #1a5276;
+            --primary-light: #2e86c1;
+            --primary-dark: #154360;
+            --secondary: #28b463;
+            --secondary-light: #58d68d;
+            --accent: #f39c12;
+            --accent-glow: #f1c40f;
+            --dark: #0c1a25;
+            --darker: #050a0f;
+            --light: #e8f4f8;
+            --gray: #7f8c8d;
+            --minecraft-green: #55FF55;
+            --minecraft-red: #FF5555;
+            --minecraft-blue: #5555FF;
+            --minecraft-purple: #AA00AA;
+            
+            --border-radius: 12px;
+            --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 50%, var(--primary-dark) 100%);
+            color: var(--light);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        /* HEADER */
+        .create-header {
+            padding: 30px 0;
+            background: rgba(5, 10, 15, 0.95);
+            border-bottom: 2px solid rgba(46, 134, 193, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            text-decoration: none;
+        }
+        
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transform: rotate(45deg);
+        }
+        
+        .logo-icon i {
+            color: white;
+            font-size: 1.3rem;
+            transform: rotate(-45deg);
+        }
+        
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .logo-main {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            background: linear-gradient(to right, var(--minecraft-green), var(--minecraft-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: 2px;
+            line-height: 1;
+        }
+        
+        .logo-sub {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+        
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--light);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+        }
+        
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-5px);
+        }
+        
+        /* MAIN CONTENT */
+        .create-container {
+            padding: 50px 0;
+            min-height: calc(100vh - 120px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .create-content {
+            width: 100%;
+            max-width: 800px;
+            background: rgba(5, 10, 15, 0.9);
+            border-radius: 20px;
+            padding: 40px;
+            border: 2px solid rgba(85, 255, 85, 0.2);
+            box-shadow: var(--box-shadow), 0 0 50px rgba(85, 255, 85, 0.1);
+        }
+        
+        .create-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.8rem;
+            color: var(--minecraft-green);
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .create-subtitle {
+            color: var(--gray);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+        
+        /* FORM STYLES */
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--light);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-label .required {
+            color: var(--minecraft-red);
+            font-size: 0.9rem;
+        }
+        
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(5, 10, 15, 0.8);
+            border: 2px solid rgba(85, 255, 85, 0.2);
+            border-radius: 10px;
+            color: var(--light);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            transition: var(--transition);
+        }
+        
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--minecraft-green);
+            box-shadow: 0 0 25px rgba(85, 255, 85, 0.2);
+        }
+        
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .form-hint {
+            display: block;
+            margin-top: 8px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+        
+        /* FILE UPLOAD */
+        .file-upload {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background: rgba(5, 10, 15, 0.8);
+            border: 2px dashed rgba(85, 255, 85, 0.3);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+        }
+        
+        .file-label:hover {
+            border-color: var(--minecraft-green);
+            background: rgba(85, 255, 85, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--minecraft-green);
+            margin-bottom: 15px;
+        }
+        
+        .upload-text {
+            font-size: 1.1rem;
+            color: var(--light);
+            margin-bottom: 10px;
+        }
+        
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .file-preview {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .preview-image {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid rgba(85, 255, 85, 0.3);
+        }
+        
+        /* CHECKBOX GROUP */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 10px 15px;
+            background: rgba(5, 10, 15, 0.6);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+        
+        .checkbox-label:hover {
+            background: rgba(85, 255, 85, 0.1);
+        }
+        
+        .checkbox-input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--minecraft-green);
+        }
+        
+        /* FORM ACTIONS */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(85, 255, 85, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* LOGIN REQUIRED */
+        .login-required {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .login-icon {
+            font-size: 4rem;
+            color: var(--minecraft-green);
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        
+        .login-required h2 {
+            font-size: 2.2rem;
+            color: var(--light);
+            margin-bottom: 20px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .login-required p {
+            color: var(--gray);
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+        }
+        
+        .login-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(85, 255, 85, 0.3);
+        }
+        
+        /* LOADING OVERLAY */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 10, 15, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--minecraft-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            position: absolute;
+            top: calc(50% + 60px);
+            color: var(--minecraft-green);
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+        }
+        
+        /* SUCCESS MESSAGE */
+        .success-message {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+        
+        .success-icon {
+            font-size: 5rem;
+            color: var(--minecraft-green);
+            margin-bottom: 30px;
+            animation: bounce 1s ease infinite;
+        }
+        
+        .success-message h2 {
+            font-size: 2.5rem;
+            color: var(--light);
+            margin-bottom: 20px;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .success-message p {
+            color: var(--gray);
+            margin-bottom: 40px;
+            font-size: 1.2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.7;
+        }
+        
+        .success-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        /* ANIMAÇÕES */
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* RESPONSIVIDADE */
+        @media (max-width: 768px) {
+            .create-content {
+                padding: 30px 20px;
+            }
+            
+            .create-title {
+                font-size: 2.2rem;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .file-label {
+                padding: 30px 20px;
+            }
+            
+            .upload-icon {
+                font-size: 2.5rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .create-title {
+                font-size: 1.8rem;
+            }
+            
+            .logo-main {
+                font-size: 1.5rem;
+            }
+            
+            .form-label {
+                font-size: 1rem;
+            }
+            
+            .checkbox-group {
+                flex-direction: column;
+            }
+            
+            .success-actions {
+                flex-direction: column;
+            }
+        }
+        
+        /* UTILITY CLASSES */
+        .hidden {
+            display: none !important;
+        }
+        
+        .visible {
+            display: block !important;
+        }
+        
+        .error {
+            color: var(--minecraft-red);
+            font-size: 0.9rem;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="create-header">
+        <div class="container">
+            <div class="header-content">
+                <a href="home.html" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="logo-text">
+                        <div class="logo-main">MineHost</div>
+                        <div class="logo-sub">Criar Servidor</div>
+                    </div>
+                </a>
+                
+                <button class="back-button" onclick="window.location.href='home.html'">
+                    <i class="fas fa-arrow-left"></i>
+                    Voltar
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="create-container">
+        <div class="container">
+            <!-- Login Required -->
+            <div id="loginRequired" class="login-required hidden">
+                <div class="login-icon">
+                    <i class="fas fa-user-lock"></i>
+                </div>
+                <h2>Login Necessário</h2>
+                <p>Para criar um servidor, você precisa fazer login com sua conta do Google. É rápido, seguro e gratuito!</p>
+                <button id="loginBtn" class="login-btn">
+                    <i class="fab fa-google"></i>
+                    Entrar com Google
+                </button>
+            </div>
+            
+            <!-- Create Form -->
+            <div id="createForm" class="create-content hidden">
+                <h1 class="create-title">CRIAR SERVIDOR</h1>
+                <p class="create-subtitle">Preencha os detalhes do seu servidor Minecraft</p>
+                
+                <form id="serverForm">
+                    <div class="form-group">
+                        <label class="form-label" for="serverName">
+                            <i class="fas fa-signature"></i> Nome do Servidor
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text" id="serverName" class="form-input" 
+                               placeholder="Ex: Meu Servidor Survival" 
+                               maxlength="50" required>
+                        <div id="nameError" class="error">O nome do servidor é obrigatório (máx. 50 caracteres)</div>
+                        <span class="form-hint">Escolha um nome atrativo para seu servidor. Máximo 50 caracteres.</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="serverDescription">
+                            <i class="fas fa-align-left"></i> Descrição
+                            <span class="required">*</span>
+                        </label>
+                        <textarea id="serverDescription" class="form-textarea" 
+                                  placeholder="Descreva seu servidor... O que os jogadores podem esperar? Quais são as regras? Que tipo de experiência você oferece?"
+                                  maxlength="500" required></textarea>
+                        <div id="descriptionError" class="error">A descrição é obrigatória (máx. 500 caracteres)</div>
+                        <span class="form-hint">Seja descritivo! Boas descrições atraem mais jogadores. Máximo 500 caracteres.</span>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="serverIP">
+                                <i class="fas fa-network-wired"></i> Endereço IP
+                                <span class="required">*</span>
+                            </label>
+                            <input type="text" id="serverIP" class="form-input" 
+                                   placeholder="exemplo.minecraft.com ou 192.168.1.1" required>
+                            <div id="ipError" class="error">Digite um endereço IP ou domínio válido</div>
+                            <span class="form-hint">Endereço público do seu servidor Minecraft</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="serverPort">
+                                <i class="fas fa-plug"></i> Porta
+                                <span class="required">*</span>
+                            </label>
+                            <input type="number" id="serverPort" class="form-input" 
+                                   value="25565" min="1" max="65535" required>
+                            <div id="portError" class="error">A porta deve estar entre 1 e 65535</div>
+                            <span class="form-hint">Porta padrão do Minecraft: 25565</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="serverVersion">
+                                <i class="fas fa-code-branch"></i> Versão do Minecraft
+                                <span class="required">*</span>
+                            </label>
+                            <select id="serverVersion" class="form-select" required>
+                                <option value="">Selecione uma versão</option>
+                                <option value="1.20.1">1.20.1 (Latest)</option>
+                                <option value="1.19.4">1.19.4</option>
+                                <option value="1.18.2">1.18.2</option>
+                                <option value="1.17.1">1.17.1</option>
+                                <option value="1.16.5">1.16.5</option>
+                                <option value="1.15.2">1.15.2</option>
+                                <option value="1.14.4">1.14.4</option>
+                                <option value="1.12.2">1.12.2 (Popular)</option>
+                            </select>
+                            <div id="versionError" class="error">Selecione uma versão do Minecraft</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="serverCategory">
+                                <i class="fas fa-tags"></i> Categoria
+                                <span class="required">*</span>
+                            </label>
+                            <select id="serverCategory" class="form-select" required>
+                                <option value="">Selecione uma categoria</option>
+                                <option value="survival">Survival</option>
+                                <option value="creative">Creative</option>
+                                <option value="pvp">PvP</option>
+                                <option value="rpg">RPG</option>
+                                <option value="minigames">Minigames</option>
+                                <option value="modded">Modded</option>
+                                <option value="anarchy">Anarchy</option>
+                                <option value="hardcore">Hardcore</option>
+                                <option value="skyblock">SkyBlock</option>
+                                <option value="factions">Factions</option>
+                                <option value="prison">Prison</option>
+                                <option value="bedwars">BedWars</option>
+                                <option value="skywars">SkyWars</option>
+                            </select>
+                            <div id="categoryError" class="error">Selecione uma categoria</div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-users"></i> Capacidade do Servidor
+                        </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="maxPlayers">
+                                    Máximo de Jogadores
+                                    <span class="required">*</span>
+                                </label>
+                                <input type="number" id="maxPlayers" class="form-input" 
+                                       value="50" min="1" max="1000" required>
+                                <div id="maxPlayersError" class="error">Digite um número entre 1 e 1000</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="currentPlayers">
+                                    Jogadores Atuais
+                                </label>
+                                <input type="number" id="currentPlayers" class="form-input" 
+                                       value="0" min="0" max="1000">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-cogs"></i> Recursos do Servidor
+                        </label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="economy">
+                                <span>Economia</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="land-protection">
+                                <span>Proteção de Terrenos</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="pvp-enabled">
+                                <span>PvP Ativado</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="mcmmo">
+                                <span>MCMMO</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="jobs">
+                                <span>Sistema de Empregos</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="quests">
+                                <span>Missões/Quests</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="dynmap">
+                                <span>Mapa Online (Dynmap)</span>
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" class="checkbox-input" name="features" value="discord">
+                                <span>Integração Discord</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-image"></i> Banner do Servidor (Opcional)
+                        </label>
+                        <div class="file-upload">
+                            <input type="file" id="bannerUpload" class="file-input" accept="image/*">
+                            <label for="bannerUpload" class="file-label" id="fileLabel">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <div class="upload-text">Clique para fazer upload do banner</div>
+                                <div class="upload-subtext">Recomendado: 1200x300 pixels (PNG, JPG, até 2MB)</div>
+                            </label>
+                            <div class="file-preview" id="filePreview">
+                                <img class="preview-image" id="previewImage" src="" alt="Prévia do banner">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="serverWebsite">
+                            <i class="fas fa-globe"></i> Site do Servidor (Opcional)
+                        </label>
+                        <input type="url" id="serverWebsite" class="form-input" 
+                               placeholder="https://meuserver.com">
+                        <span class="form-hint">Link para o site oficial ou fórum do seu servidor</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="serverDiscord">
+                            <i class="fab fa-discord"></i> Discord (Opcional)
+                        </label>
+                        <input type="url" id="serverDiscord" class="form-input" 
+                               placeholder="https://discord.gg/seu-link">
+                        <span class="form-hint">Link de convite para o Discord do servidor</span>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="window.location.href='home.html'">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-rocket"></i>
+                            CRIAR SERVIDOR
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Success Message -->
+            <div id="successMessage" class="success-message hidden">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2>SERVIDOR CRIADO COM SUCESSO!</h2>
+                <p>Seu servidor foi criado e já está disponível na lista pública. Compartilhe com seus amigos e comece a jogar!</p>
+                <div class="success-actions">
+                    <button class="btn btn-primary" onclick="window.location.href='home.html'">
+                        <i class="fas fa-home"></i>
+                        Voltar para Home
+                    </button>
+                    <button class="btn btn-secondary" onclick="createAnother()">
+                        <i class="fas fa-plus"></i>
+                        Criar Outro Servidor
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Criando servidor...</div>
+    </div>
+    
+    <script>
+        // Sistema de criação de servidores 100% integrado com Firebase
+        
+        let currentUser = null;
+        let bannerFile = null;
+        let bannerUrl = null;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar autenticação
+            checkAuth();
+            
+            // Configurar eventos do formulário
+            setupForm();
+            
+            // Configurar upload de imagem
+            setupImageUpload();
+            
+            // Configurar validação em tempo real
+            setupValidation();
+        });
+        
+        // Verificar autenticação
+        async function checkAuth() {
+            try {
+                window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        showCreateForm();
+                    } else {
+                        currentUser = null;
+                        showLoginRequired();
+                    }
+                });
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                showLoginRequired();
+            }
+        }
+        
+        // Mostrar formulário de criação
+        function showCreateForm() {
+            document.getElementById('loginRequired').classList.add('hidden');
+            document.getElementById('createForm').classList.remove('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+        }
+        
+        // Mostrar tela de login necessário
+        function showLoginRequired() {
+            document.getElementById('loginRequired').classList.remove('hidden');
+            document.getElementById('createForm').classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+            
+            // Configurar botão de login
+            document.getElementById('loginBtn').addEventListener('click', signInWithGoogle);
+        }
+        
+        // Login com Google
+        async function signInWithGoogle() {
+            try {
+                const result = await window.firebase.signInWithPopup(
+                    window.firebase.auth, 
+                    window.firebase.provider
+                );
+                
+                // Atualizar informações do usuário no Firestore
+                const userRef = window.firebase.doc(window.firebase.db, 'users', result.user.uid);
+                await window.firebase.setDoc(userRef, {
+                    uid: result.user.uid,
+                    displayName: result.user.displayName,
+                    email: result.user.email,
+                    photoURL: result.user.photoURL,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString(),
+                    serversCreated: 0
+                }, { merge: true });
+                
+                showNotification(`Bem-vindo, ${result.user.displayName}!`);
+                
+            } catch (error) {
+                console.error('Erro no login:', error);
+                showNotification('Erro ao fazer login com Google');
+            }
+        }
+        
+        // Configurar formulário
+        function setupForm() {
+            const form = document.getElementById('serverForm');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                if (!currentUser) {
+                    showNotification('Você precisa estar logado para criar um servidor!');
+                    signInWithGoogle();
+                    return;
+                }
+                
+                // Validar formulário
+                if (!validateForm()) {
+                    return;
+                }
+                
+                // Mostrar loading
+                document.getElementById('loadingOverlay').classList.add('active');
+                submitBtn.disabled = true;
+                
+                try {
+                    // Gerar slug único para o servidor
+                    const serverName = document.getElementById('serverName').value;
+                    const slug = generateSlug(serverName);
+                    
+                    // Preparar dados do servidor
+                    const serverData = {
+                        name: serverName,
+                        description: document.getElementById('serverDescription').value,
+                        ip: document.getElementById('serverIP').value.trim(),
+                        port: parseInt(document.getElementById('serverPort').value),
+                        version: document.getElementById('serverVersion').value,
+                        category: document.getElementById('serverCategory').value,
+                        maxPlayers: parseInt(document.getElementById('maxPlayers').value),
+                        players: parseInt(document.getElementById('currentPlayers').value) || 0,
+                        online: true, // Novo servidor começa como online
+                        ownerId: currentUser.uid,
+                        ownerName: currentUser.displayName,
+                        ownerAvatar: currentUser.photoURL,
+                        features: getSelectedFeatures(),
+                        website: document.getElementById('serverWebsite').value.trim() || null,
+                        discord: document.getElementById('serverDiscord').value.trim() || null,
+                        slug: slug,
+                        createdAt: window.firebase.serverTimestamp(),
+                        updatedAt: window.firebase.serverTimestamp(),
+                        views: 0,
+                        joins: 0
+                    };
+                    
+                    // Upload do banner se existir
+                    if (bannerFile) {
+                        try {
+                            const bannerUrl = await uploadBanner(bannerFile, currentUser.uid, slug);
+                            serverData.banner = bannerUrl;
+                        } catch (uploadError) {
+                            console.warn('Erro ao fazer upload do banner, usando banner padrão:', uploadError);
+                            serverData.banner = `https://picsum.photos/1200/300?random=${Date.now()}`;
+                        }
+                    } else {
+                        // Banner padrão baseado na categoria
+                        serverData.banner = `https://picsum.photos/1200/300?random=${slug}&category=${serverData.category}`;
+                    }
+                    
+                    // Salvar no Firestore
+                    const docRef = await window.firebase.addDoc(
+                        window.firebase.collection(window.firebase.db, 'servers'),
+                        serverData
+                    );
+                    
+                    // Atualizar contador de servidores do usuário
+                    await updateUserServerCount(currentUser.uid);
+                    
+                    // Mostrar mensagem de sucesso
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                    document.getElementById('createForm').classList.add('hidden');
+                    document.getElementById('successMessage').classList.remove('hidden');
+                    
+                    showNotification('Servidor criado com sucesso!');
+                    
+                } catch (error) {
+                    console.error('Erro ao criar servidor:', error);
+                    showNotification('Erro ao criar servidor. Tente novamente.');
+                    submitBtn.disabled = false;
+                    document.getElementById('loadingOverlay').classList.remove('active');
+                }
+            });
+        }
+        
+        // Gerar slug a partir do nome
+        function generateSlug(name) {
+            return name
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .substring(0, 50) + '-' + Date.now().toString(36);
+        }
+        
+        // Obter recursos selecionados
+        function getSelectedFeatures() {
+            const checkboxes = document.querySelectorAll('input[name="features"]:checked');
+            return Array.from(checkboxes).map(cb => cb.value);
+        }
+        
+        // Upload do banner para Firebase Storage
+        async function uploadBanner(file, userId, serverSlug) {
+            try {
+                // Criar nome único para o arquivo
+                const fileName = `banners/${userId}/${serverSlug}_${Date.now()}.${file.name.split('.').pop()}`;
+                const storageRef = window.firebase.ref(window.firebase.storage, fileName);
+                
+                // Fazer upload
+                await window.firebase.uploadBytes(storageRef, file);
+                
+                // Obter URL de download
+                const downloadURL = await window.firebase.getDownloadURL(storageRef);
+                return downloadURL;
+                
+            } catch (error) {
+                console.error('Erro no upload do banner:', error);
+                throw error;
+            }
+        }
+        
+        // Atualizar contador de servidores do usuário
+        async function updateUserServerCount(userId) {
+            try {
+                // Buscar servidores do usuário
+                const serversQuery = window.firebase.query(
+                    window.firebase.collection(window.firebase.db, 'servers'),
+                    window.firebase.where('ownerId', '==', userId)
+                );
+                
+                // Em produção, você usaria uma contagem mais eficiente
+                // Esta é uma implementação simples
+                const userRef = window.firebase.doc(window.firebase.db, 'users', userId);
+                const userDoc = await window.firebase.getDoc(userRef);
+                
+                if (userDoc.exists()) {
+                    const currentCount = userDoc.data().serversCreated || 0;
+                    await window.firebase.setDoc(userRef, {
+                        serversCreated: currentCount + 1,
+                        lastServerCreated: new Date().toISOString()
+                    }, { merge: true });
+                }
+                
+            } catch (error) {
+                console.warn('Erro ao atualizar contador de servidores:', error);
+            }
+        }
+        
+        // Configurar upload de imagem
+        function setupImageUpload() {
+            const fileInput = document.getElementById('bannerUpload');
+            const filePreview = document.getElementById('filePreview');
+            const previewImage = document.getElementById('previewImage');
+            const fileLabel = document.getElementById('fileLabel');
+            
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                
+                if (!file) return;
+                
+                // Validar tipo de arquivo
+                if (!file.type.match('image.*')) {
+                    showNotification('Por favor, selecione apenas imagens!');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Validar tamanho (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    showNotification('A imagem deve ter no máximo 2MB!');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Salvar arquivo
+                bannerFile = file;
+                
+                // Mostrar prévia
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImage.src = e.target.result;
+                    filePreview.style.display = 'block';
+                    fileLabel.querySelector('.upload-text').textContent = 'Trocar imagem';
+                    fileLabel.querySelector('.upload-subtext').textContent = file.name;
+                };
+                reader.readAsDataURL(file);
+            });
+            
+            // Permitir arrastar e soltar
+            fileLabel.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = 'var(--minecraft-green)';
+                this.style.background = 'rgba(85, 255, 85, 0.05)';
+            });
+            
+            fileLabel.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '';
+                this.style.background = '';
+            });
+            
+            fileLabel.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '';
+                this.style.background = '';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+        
+        // Configurar validação em tempo real
+        function setupValidation() {
+            // Nome do servidor
+            document.getElementById('serverName').addEventListener('input', function() {
+                const error = document.getElementById('nameError');
+                if (!this.value.trim() || this.value.length > 50) {
+                    error.style.display = 'block';
+                } else {
+                    error.style.display = 'none';
+                }
+            });
+            
+            // Descrição
+            document.getElementById('serverDescription').addEventListener('input', function() {
+                const error = document.getElementById('descriptionError');
+                if (!this.value.trim() || this.value.length > 500) {
+                    error.style.display = 'block';
+                } else {
+                    error.style.display = 'none';
+                }
+            });
+            
+            // IP
+            document.getElementById('serverIP').addEventListener('input', function() {
+                const error = document.getElementById('ipError');
+                if (!isValidIPorDomain(this.value.trim())) {
+                    error.style.display = 'block';
+                } else {
+                    error.style.display = 'none';
+                }
+            });
+            
+            // Porta
+            document.getElementById('serverPort').addEventListener('input', function() {
+                const error = document.getElementById('portError');
+                const port = parseInt(this.value);
+                if (isNaN(port) || port < 1 || port > 65535) {
+                    error.style.display = 'block';
+                } else {
+                    error.style.display = 'none';
+                }
+            });
+            
+            // Versão
+            document.getElementById('serverVersion').addEventListener('change', function() {
+                const error = document.getElementById('versionError');
+                error.style.display = this.value ? 'none' : 'block';
+            });
+            
+            // Categoria
+            document.getElementById('serverCategory').addEventListener('change', function() {
+                const error = document.getElementById('categoryError');
+                error.style.display = this.value ? 'none' : 'block';
+            });
+            
+            // Máximo de jogadores
+            document.getElementById('maxPlayers').addEventListener('input', function() {
+                const error = document.getElementById('maxPlayersError');
+                const max = parseInt(this.value);
+                if (isNaN(max) || max < 1 || max > 1000) {
+                    error.style.display = 'block';
+                } else {
+                    error.style.display = 'none';
+                }
+            });
+        }
+        
+        // Validar formulário completo
+        function validateForm() {
+            let isValid = true;
+            
+            // Nome
+            const name = document.getElementById('serverName').value.trim();
+            if (!name || name.length > 50) {
+                document.getElementById('nameError').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Descrição
+            const description = document.getElementById('serverDescription').value.trim();
+            if (!description || description.length > 500) {
+                document.getElementById('descriptionError').style.display = 'block';
+                isValid = false;
+            }
+            
+            // IP
+            const ip = document.getElementById('serverIP').value.trim();
+            if (!ip || !isValidIPorDomain(ip)) {
+                document.getElementById('ipError').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Porta
+            const port = parseInt(document.getElementById('serverPort').value);
+            if (isNaN(port) || port < 1 || port > 65535) {
+                document.getElementById('portError').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Versão
+            const version = document.getElementById('serverVersion').value;
+            if (!version) {
+                document.getElementById('versionError').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Categoria
+            const category = document.getElementById('serverCategory').value;
+            if (!category) {
+                document.getElementById('categoryError').style.display = 'block';
+                isValid = false;
+            }
+            
+            // Máximo de jogadores
+            const maxPlayers = parseInt(document.getElementById('maxPlayers').value);
+            if (isNaN(maxPlayers) || maxPlayers < 1 || maxPlayers > 1000) {
+                document.getElementById('maxPlayersError').style.display = 'block';
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                showNotification('Por favor, corrija os erros no formulário.');
+                // Rolar para o primeiro erro
+                document.querySelector('.error[style*="block"]')?.closest('.form-group')?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+            
+            return isValid;
+        }
+        
+        // Validar IP ou domínio
+        function isValidIPorDomain(text) {
+            // Aceita IPs (192.168.1.1) ou domínios (server.minecraft.com)
+            const ipPattern = /^(?!:\/\/)([a-zA-Z0-9-_]+\.)*[a-zA-Z0-9][a-zA-Z0-9-_]+\.[a-zA-Z]{2,11}?$/;
+            const ipv4Pattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+            
+            return ipPattern.test(text) || ipv4Pattern.test(text);
+        }
+        
+        // Criar outro servidor
+        function createAnother() {
+            // Resetar formulário
+            document.getElementById('serverForm').reset();
+            document.getElementById('filePreview').style.display = 'none';
+            bannerFile = null;
+            
+            // Mostrar formulário novamente
+            document.getElementById('successMessage').classList.add('hidden');
+            document.getElementById('createForm').classList.remove('hidden');
+            
+            // Resetar erros
+            document.querySelectorAll('.error').forEach(error => {
+                error.style.display = 'none';
+            });
+            
+            // Rolar para o topo
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Mostrar notificação
+        function showNotification(message) {
+            // Remover notificação anterior
+            const oldNotification = document.querySelector('.notification');
+            if (oldNotification) {
+                oldNotification.remove();
+            }
+            
+            // Criar nova notificação
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 100px;
+                    right: 20px;
+                    background: linear-gradient(135deg, var(--primary-dark), var(--darker));
+                    color: white;
+                    padding: 18px 30px;
+                    border-radius: 12px;
+                    border-left: 5px solid var(--minecraft-green);
+                    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+                    z-index: 10000;
+                    animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    max-width: 350px;
+                    font-family: 'Rajdhani', sans-serif;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    backdrop-filter: blur(10px);
+                    border: 2px solid rgba(85, 255, 85, 0.2);
+                ">
+                    <i class="fas fa-check-circle" style="color: var(--minecraft-green); font-size: 1.4rem;"></i>
+                    <span style="flex: 1;">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Adicionar animações CSS
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%) translateY(-20px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0) translateY(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0) translateY(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%) translateY(-20px);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Remover após 3 segundos
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.4s ease forwards';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 400);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
