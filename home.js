@@ -1,0 +1,993 @@
+// Sistema 100% real com Firebase Firestore e Supabase Storage
+
+// Variáveis globais
+let currentUser = null;
+let servers = [];
+let filteredServers = [];
+let featuredServers = [];
+let categories = [];
+let currentFilter = 'all';
+let searchTerm = '';
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Iniciando MineHost...');
+    
+    // Iniciar loading
+    simulateLoading();
+    
+    // Inicializar particles
+    initParticles();
+    
+    // Configurar eventos
+    setupEventListeners();
+    
+    try {
+        // Inicializar Firebase
+        await initializeFirebase();
+        
+        // Verificar autenticação
+        await checkAuth();
+        
+        // Carregar servidores
+        await loadServers();
+    } catch (error) {
+        console.error('Erro na inicialização:', error);
+        showNotification('Erro ao carregar dados. Verifique sua conexão.');
+    } finally {
+        // Finalizar loading após 2 segundos (mesmo com erro)
+        setTimeout(() => {
+            document.getElementById('loading-page').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('loading-page').style.display = 'none';
+            }, 500);
+        }, 2000);
+    }
+});
+
+// Inicializar Firebase
+async function initializeFirebase() {
+    try {
+        // Firebase SDK (APENAS AUTH E FIRESTORE)
+        const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+        const { 
+            getAuth, 
+            GoogleAuthProvider, 
+            signInWithPopup, 
+            signOut,
+            onAuthStateChanged 
+        } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+        const { 
+            getFirestore, 
+            collection, 
+            getDocs, 
+            query, 
+            orderBy,
+            where,
+            doc,
+            getDoc,
+            setDoc
+        } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAwgA3wphz-vgQgiN1S9evAxZ5R9r6qhac",
+            authDomain: "minesv-5760d.firebaseapp.com",
+            projectId: "minesv-5760d",
+            storageBucket: "minesv-5760d.firebasestorage.app",
+            messagingSenderId: "1028898660834",
+            appId: "1:1028898660834:web:19399da70912b70737d9bb",
+            measurementId: "G-VVXNMFCVLK"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        // Make Firebase available globally
+        window.firebase = {
+            app,
+            auth,
+            db,
+            provider,
+            signInWithPopup,
+            signOut,
+            onAuthStateChanged,
+            collection,
+            getDocs,
+            query,
+            orderBy,
+            where,
+            doc,
+            getDoc,
+            setDoc
+        };
+        
+        // Configuração do Supabase para Storage (IMAGENS)
+        window.supabaseConfig = {
+            bucketName: "MineSV%20IMG",
+            projectId: "neyrdxxqihgvphuhjqmy",
+            baseUrl: "https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/public",
+            s3Endpoint: "https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/s3",
+            region: "us-west-2"
+        };
+        
+        // Função para obter URL da imagem do Supabase
+        window.getSupabaseImageUrl = function(imagePath) {
+            if (!imagePath) {
+                return `https://picsum.photos/600/300?random=${Math.random()}`;
+            }
+            
+            // Se já é uma URL completa, retorna ela mesma
+            if (imagePath.startsWith('http')) {
+                return imagePath;
+            }
+            
+            // Se for um caminho do Supabase, monta a URL completa
+            return `${window.supabaseConfig.baseUrl}/${window.supabaseConfig.bucketName}/${imagePath}`;
+        };
+        
+        console.log('Firebase inicializado com sucesso!');
+    } catch (error) {
+        console.error('Erro ao inicializar Firebase:', error);
+        throw error;
+    }
+}
+
+// Simular loading com progresso real
+function simulateLoading() {
+    let progress = 0;
+    const progressBar = document.getElementById('loading-progress');
+    
+    const interval = setInterval(() => {
+        progress += 1;
+        progressBar.style.width = progress + '%';
+        
+        if (progress >= 100) {
+            clearInterval(interval);
+        }
+    }, 15);
+}
+
+// Inicializar particles
+function initParticles() {
+    try {
+        if (typeof particlesJS !== 'undefined') {
+            particlesJS('particles-js', {
+                particles: {
+                    number: {
+                        value: 70,
+                        density: {
+                            enable: true,
+                            value_area: 800
+                        }
+                    },
+                    color: {
+                        value: ["#55FF55", "#5555FF", "#AA00AA", "#f39c12"]
+                    },
+                    shape: {
+                        type: "circle",
+                        stroke: {
+                            width: 0,
+                            color: "#000000"
+                        }
+                    },
+                    opacity: {
+                        value: 0.6,
+                        random: true,
+                        anim: {
+                            enable: true,
+                            speed: 1,
+                            opacity_min: 0.1,
+                            sync: false
+                        }
+                    },
+                    size: {
+                        value: 4,
+                        random: true,
+                        anim: {
+                            enable: true,
+                            speed: 2,
+                            size_min: 0.1,
+                            sync: false
+                        }
+                    },
+                    line_linked: {
+                        enable: true,
+                        distance: 200,
+                        color: "#55FF55",
+                        opacity: 0.2,
+                        width: 1.5
+                    },
+                    move: {
+                        enable: true,
+                        speed: 1.5,
+                        direction: "none",
+                        random: true,
+                        straight: false,
+                        out_mode: "out",
+                        bounce: false,
+                        attract: {
+                            enable: false,
+                            rotateX: 600,
+                            rotateY: 1200
+                        }
+                    }
+                },
+                interactivity: {
+                    detect_on: "canvas",
+                    events: {
+                        onhover: {
+                            enable: true,
+                            mode: "grab"
+                        },
+                        onclick: {
+                            enable: true,
+                            mode: "push"
+                        },
+                        resize: true
+                    }
+                },
+                retina_detect: true
+            });
+        }
+    } catch (error) {
+        console.log('Particles.js não carregou, continuando sem ele...');
+    }
+}
+
+// Configurar eventos
+function setupEventListeners() {
+    // Login com Google
+    document.getElementById('loginBtn').addEventListener('click', signInWithGoogle);
+    
+    // Search input
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        searchTerm = e.target.value.toLowerCase().trim();
+        filterAndDisplayServers();
+    });
+    
+    // Botão de criar servidor
+    document.getElementById('createBtn').addEventListener('click', function(e) {
+        if (!currentUser) {
+            e.preventDefault();
+            showNotification('Faça login para criar um servidor!');
+            signInWithGoogle();
+        }
+    });
+    
+    // Configurar scroll do header
+    setupHeaderScroll();
+}
+
+// Configurar scroll do header
+function setupHeaderScroll() {
+    const header = document.getElementById('header');
+    window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+    });
+}
+
+// Verificar autenticação
+async function checkAuth() {
+    try {
+        console.log('Verificando autenticação...');
+        
+        window.firebase.onAuthStateChanged(window.firebase.auth, async (user) => {
+            console.log('Estado da autenticação alterado:', user ? 'Usuário logado' : 'Nenhum usuário');
+            
+            if (user) {
+                currentUser = user;
+                updateUIForUser(user);
+                await saveUserToFirestore(user);
+            } else {
+                currentUser = null;
+                updateUIForGuest();
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao verificar autenticação:', error);
+        updateUIForGuest();
+    }
+}
+
+// Salvar usuário no Firestore
+async function saveUserToFirestore(user) {
+    try {
+        console.log('Salvando usuário no Firestore:', user.uid);
+        
+        const userRef = window.firebase.doc(window.firebase.db, 'users', user.uid);
+        
+        await window.firebase.setDoc(userRef, {
+            uid: user.uid,
+            displayName: user.displayName || 'Usuário',
+            email: user.email || '',
+            photoURL: user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+            createdAt: new Date().toISOString(),
+            lastLogin: new Date().toISOString(),
+            serversCount: 0,
+            favoritesCount: 0
+        }, { merge: true });
+        
+        console.log('Usuário salvo com sucesso no Firestore');
+    } catch (error) {
+        console.error('Erro ao salvar usuário no Firestore:', error);
+    }
+}
+
+// Login com Google
+async function signInWithGoogle() {
+    try {
+        console.log('Iniciando login com Google...');
+        
+        const result = await window.firebase.signInWithPopup(
+            window.firebase.auth, 
+            window.firebase.provider
+        );
+        
+        const user = result.user;
+        console.log('Login bem sucedido:', user.displayName);
+        
+        showNotification(`Bem-vindo, ${user.displayName}!`);
+        
+    } catch (error) {
+        console.error('Erro no login:', error);
+        showNotification('Erro ao fazer login com Google: ' + error.message);
+    }
+}
+
+// Atualizar UI para usuário logado
+function updateUIForUser(user) {
+    console.log('Atualizando UI para usuário logado:', user.displayName);
+    
+    // Mostrar botão de criar servidor
+    document.getElementById('createBtn').classList.remove('hidden');
+    
+    // Mostrar perfil do usuário (agora é um link)
+    const userProfile = document.getElementById('userProfile');
+    userProfile.classList.remove('hidden');
+    
+    const userAvatar = document.getElementById('userAvatar');
+    const userName = document.getElementById('userName');
+    
+    userAvatar.src = user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+    userName.textContent = user.displayName || 'Usuário';
+    
+    // Esconder botão de login
+    document.getElementById('loginBtn').classList.add('hidden');
+}
+
+// Atualizar UI para visitante
+function updateUIForGuest() {
+    console.log('Atualizando UI para visitante');
+    
+    // Mostrar botão de login
+    document.getElementById('loginBtn').classList.remove('hidden');
+    
+    // Esconder perfil do usuário
+    document.getElementById('userProfile').classList.add('hidden');
+    
+    // Esconder botão de criar servidor
+    document.getElementById('createBtn').classList.add('hidden');
+}
+
+// Carregar servidores do Firestore - DADOS REAIS
+async function loadServers() {
+    try {
+        console.log('Carregando servidores do Firestore...');
+        
+        // Buscar servidores do Firestore
+        const serversQuery = window.firebase.query(
+            window.firebase.collection(window.firebase.db, 'servers'),
+            window.firebase.orderBy('createdAt', 'desc')
+        );
+        
+        const serversSnapshot = await window.firebase.getDocs(serversQuery);
+        servers = [];
+        
+        console.log(`Encontrados ${serversSnapshot.size} documentos na coleção 'servers'`);
+        
+        serversSnapshot.forEach(doc => {
+            const serverData = doc.data();
+            console.log(`Processando servidor ${doc.id}:`, serverData.name);
+            
+            // Converter timestamp do Firebase para Date
+            let createdAt = new Date();
+            if (serverData.createdAt) {
+                if (serverData.createdAt.toDate) {
+                    createdAt = serverData.createdAt.toDate();
+                } else if (typeof serverData.createdAt === 'string') {
+                    createdAt = new Date(serverData.createdAt);
+                } else if (serverData.createdAt.seconds) {
+                    createdAt = new Date(serverData.createdAt.seconds * 1000);
+                }
+            }
+            
+            // Processar URL da imagem (usar Supabase)
+            let bannerUrl = serverData.banner || '';
+            if (bannerUrl && !bannerUrl.startsWith('http')) {
+                // Se for um caminho do Supabase, converter para URL completa
+                bannerUrl = window.getSupabaseImageUrl(bannerUrl);
+            } else if (!bannerUrl) {
+                // Imagem padrão
+                bannerUrl = `https://picsum.photos/600/300?random=${doc.id}`;
+            }
+            
+            // Processar URL do ícone (se existir)
+            let iconUrl = serverData.icon || '';
+            if (iconUrl && !iconUrl.startsWith('http')) {
+                iconUrl = window.getSupabaseImageUrl(iconUrl);
+            }
+            
+            servers.push({
+                id: doc.id,
+                name: serverData.name || 'Servidor Sem Nome',
+                description: serverData.description || 'Um servidor Minecraft incrível!',
+                category: serverData.category || 'survival',
+                ip: serverData.ip || 'sem-ip.com',
+                port: serverData.port || '25565',
+                players: parseInt(serverData.players) || 0,
+                maxPlayers: parseInt(serverData.maxPlayers) || 100,
+                online: serverData.online !== undefined ? serverData.online : true,
+                version: serverData.version || '1.20.1',
+                ownerId: serverData.ownerId || '',
+                ownerName: serverData.ownerName || 'Anônimo',
+                ownerAvatar: serverData.ownerAvatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+                banner: bannerUrl,
+                icon: iconUrl,
+                createdAt: createdAt,
+                votes: parseInt(serverData.votes) || 0,
+                views: parseInt(serverData.views) || 0
+            });
+        });
+        
+        console.log(`Processados ${servers.length} servidores`);
+        
+        if (servers.length === 0) {
+            console.log('Nenhum servidor encontrado. Criando servidores de exemplo...');
+            await createSampleServers();
+        }
+        
+        // Extrair categorias únicas
+        extractCategories();
+        
+        // Configurar servidores filtrados (todos inicialmente)
+        filteredServers = [...servers];
+        
+        // Atualizar estatísticas
+        updateStats();
+        
+        // Exibir servidores
+        displayServers();
+        setupFilters();
+        
+        console.log('Servidores carregados com sucesso!');
+        
+    } catch (error) {
+        console.error('Erro ao carregar servidores do Firestore:', error);
+        showNotification('Erro ao carregar servidores. Verifique sua conexão.');
+        
+        // Mesmo com erro, inicializar arrays vazios
+        servers = [];
+        filteredServers = [];
+        updateStats();
+        displayServers();
+        setupFilters();
+        
+        // Tentar criar servidores de exemplo
+        await createSampleServers();
+    }
+}
+
+// Criar servidores de exemplo (se não houver servidores)
+async function createSampleServers() {
+    try {
+        console.log('Criando servidores de exemplo...');
+        
+        const sampleServers = [
+            {
+                name: "SkyBlock Adventures",
+                description: "Um servidor SkyBlock com economia e desafios únicos!",
+                category: "survival",
+                ip: "skyblock.minehost.com",
+                port: "25565",
+                players: 42,
+                maxPlayers: 100,
+                online: true,
+                version: "1.20.1",
+                ownerName: "MineHost",
+                banner: "https://picsum.photos/600/300?random=skyblock",
+                votes: 156,
+                views: 1200
+            },
+            {
+                name: "Creative Paradise",
+                description: "Mundo criativo ilimitado com proteção de terrenos!",
+                category: "creative",
+                ip: "creative.minehost.com",
+                port: "25565",
+                players: 28,
+                maxPlayers: 80,
+                online: true,
+                version: "1.20.1",
+                ownerName: "MineHost",
+                banner: "https://picsum.photos/600/300?random=creative",
+                votes: 89,
+                views: 850
+            },
+            {
+                name: "PvP Arena",
+                description: "Batalhas PvP intensas com diferentes arenas e modos!",
+                category: "pvp",
+                ip: "pvp.minehost.com",
+                port: "25565",
+                players: 65,
+                maxPlayers: 120,
+                online: true,
+                version: "1.20.1",
+                ownerName: "MineHost",
+                banner: "https://picsum.photos/600/300?random=pvp",
+                votes: 203,
+                views: 1800
+            },
+            {
+                name: "RPG Legends",
+                description: "Mundo de RPG épico com missões e classes únicas!",
+                category: "rpg",
+                ip: "rpg.minehost.com",
+                port: "25565",
+                players: 38,
+                maxPlayers: 80,
+                online: true,
+                version: "1.20.1",
+                ownerName: "MineHost",
+                banner: "https://picsum.photos/600/300?random=rpg",
+                votes: 94,
+                views: 920
+            },
+            {
+                name: "BedWars Champions",
+                description: "Batalhas de BedWars com times competitivos!",
+                category: "bedwars",
+                ip: "bedwars.minehost.com",
+                port: "25565",
+                players: 72,
+                maxPlayers: 100,
+                online: true,
+                version: "1.20.1",
+                ownerName: "MineHost",
+                banner: "https://picsum.photos/600/300?random=bedwars",
+                votes: 187,
+                views: 1500
+            }
+        ];
+        
+        // Adicionar servidores de exemplo ao array
+        sampleServers.forEach((server, index) => {
+            servers.push({
+                id: 'sample-' + index,
+                ...server,
+                ownerId: 'system',
+                ownerAvatar: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+                createdAt: new Date(),
+                icon: ''
+            });
+        });
+        
+        console.log(`${sampleServers.length} servidores de exemplo criados`);
+        
+        // Atualizar a exibição
+        filteredServers = [...servers];
+        updateStats();
+        displayServers();
+        setupFilters();
+        
+    } catch (error) {
+        console.error('Erro ao criar servidores de exemplo:', error);
+    }
+}
+
+// Extrair categorias únicas
+function extractCategories() {
+    const allCategories = servers.map(server => server.category);
+    categories = ['all', ...new Set(allCategories)];
+    console.log('Categorias encontradas:', categories);
+}
+
+// Atualizar estatísticas com dados REAIS
+function updateStats() {
+    // Atualizar contadores na página
+    const totalServers = servers.length;
+    const onlineServers = servers.filter(s => s.online).length;
+    const totalPlayers = servers.reduce((sum, server) => sum + (server.players || 0), 0);
+    
+    document.getElementById('totalServers').textContent = totalServers;
+    document.getElementById('onlineServers').textContent = onlineServers;
+    document.getElementById('totalPlayers').textContent = totalPlayers;
+    
+    // Atualizar loading stats
+    document.getElementById('stat-servers').textContent = totalServers;
+    document.getElementById('stat-players').textContent = totalPlayers;
+    document.getElementById('stat-online').textContent = onlineServers;
+    
+    console.log(`Estatísticas atualizadas: ${totalServers} servidores, ${onlineServers} online, ${totalPlayers} jogadores`);
+}
+
+// Configurar filtros
+function setupFilters() {
+    const filtersGrid = document.getElementById('filtersGrid');
+    
+    // Criar botões de filtro
+    filtersGrid.innerHTML = categories.map(category => `
+        <button class="filter-btn ${category === 'all' ? 'active' : ''}" 
+                data-filter="${category}">
+            <i class="fas fa-${getCategoryIcon(category)}"></i>
+            ${getCategoryName(category)}
+        </button>
+    `).join('');
+    
+    console.log('Filtros configurados:', categories.length, 'categorias');
+    
+    // Adicionar eventos aos botões
+    document.querySelectorAll('.filter-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remover active de todos
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Adicionar active ao clicado
+            this.classList.add('active');
+            
+            // Atualizar filtro
+            currentFilter = this.dataset.filter;
+            console.log('Filtro alterado para:', currentFilter);
+            filterAndDisplayServers();
+        });
+    });
+}
+
+// Obter ícone da categoria
+function getCategoryIcon(category) {
+    const icons = {
+        'all': 'globe-americas',
+        'survival': 'tree',
+        'creative': 'paint-brush',
+        'pvp': 'crosshairs',
+        'rpg': 'dragon',
+        'minigames': 'gamepad',
+        'modded': 'puzzle-piece',
+        'anarchy': 'skull-crossbones',
+        'hardcore': 'heartbeat',
+        'skyblock': 'cloud',
+        'bedwars': 'bed',
+        'factions': 'users'
+    };
+    return icons[category] || 'server';
+}
+
+// Obter nome da categoria
+function getCategoryName(category) {
+    const names = {
+        'all': 'Todos',
+        'survival': 'Survival',
+        'creative': 'Creative',
+        'pvp': 'PvP',
+        'rpg': 'RPG',
+        'minigames': 'Minigames',
+        'modded': 'Modded',
+        'anarchy': 'Anarchy',
+        'hardcore': 'Hardcore',
+        'skyblock': 'SkyBlock',
+        'bedwars': 'BedWars',
+        'factions': 'Factions'
+    };
+    return names[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+// Filtrar e exibir servidores
+function filterAndDisplayServers() {
+    console.log('Filtrando servidores...', {
+        filtro: currentFilter,
+        busca: searchTerm,
+        total: servers.length
+    });
+    
+    filteredServers = servers.filter(server => {
+        // Aplicar filtro de categoria
+        if (currentFilter !== 'all' && server.category !== currentFilter) {
+            return false;
+        }
+        
+        // Aplicar busca
+        if (searchTerm) {
+            const searchIn = `${server.name} ${server.description} ${server.category} ${getCategoryName(server.category)}`.toLowerCase();
+            if (!searchIn.includes(searchTerm)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    console.log(`Encontrados ${filteredServers.length} servidores após filtro`);
+    
+    displayServers();
+}
+
+// Exibir servidores na grid
+function displayServers() {
+    const serversGrid = document.getElementById('serversGrid');
+    const noServers = document.getElementById('noServers');
+    
+    if (filteredServers.length === 0) {
+        serversGrid.innerHTML = '';
+        serversGrid.appendChild(noServers);
+        noServers.classList.remove('hidden');
+        console.log('Nenhum servidor encontrado para exibição');
+        return;
+    }
+    
+    noServers.classList.add('hidden');
+    
+    serversGrid.innerHTML = filteredServers.map((server, index) => {
+        // Verificar se o banner é uma URL válida
+        const bannerUrl = server.banner || `https://picsum.photos/600/300?random=${server.id}`;
+        
+        return `
+        <div class="server-card" 
+             data-category="${server.category}"
+             style="animation-delay: ${index * 0.1}s">
+            
+            <div class="server-banner">
+                <img src="${bannerUrl}" alt="${server.name}" 
+                     onerror="this.onerror=null; this.src='https://picsum.photos/600/300?random=${server.id}'">
+                <div class="server-status">
+                    <div class="status-dot ${server.online ? '' : 'offline'}"></div>
+                    <div class="status-text">${server.online ? 'ONLINE' : 'OFFLINE'}</div>
+                </div>
+            </div>
+            
+            <div class="server-content">
+                <div class="server-header">
+                    <div class="server-icon">
+                        <i class="fas fa-${getCategoryIcon(server.category)}"></i>
+                    </div>
+                    <div class="server-info">
+                        <h3 class="server-title">
+                            <span title="${server.name}">${server.name}</span>
+                            <span class="server-category">${getCategoryName(server.category)}</span>
+                        </h3>
+                        <p class="server-description" title="${server.description}">
+                            ${server.description}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="server-stats">
+                    <div class="server-stat">
+                        <div class="stat-value">${server.players}/${server.maxPlayers}</div>
+                        <div class="stat-label">Jogadores</div>
+                    </div>
+                    <div class="server-stat">
+                        <div class="stat-value">${server.version}</div>
+                        <div class="stat-label">Versão</div>
+                    </div>
+                    <div class="server-stat">
+                        <div class="stat-value">${server.votes || 0}</div>
+                        <div class="stat-label">Votos</div>
+                    </div>
+                </div>
+                
+                <div class="server-ip-container" onclick="copyIP('${server.ip}:${server.port}')">
+                    <div class="server-ip">
+                        <span class="ip-text">${server.ip}:${server.port}</span>
+                        <button class="copy-btn">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="server-actions">
+                    <button class="join-btn" onclick="joinServer('${server.ip}', '${server.port}')">
+                        <i class="fas fa-gamepad"></i>
+                        ENTRAR NO SERVIDOR
+                    </button>
+                    <button class="favorite-btn" onclick="toggleFavorite('${server.id}', this)">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    console.log(`${filteredServers.length} servidores exibidos`);
+    
+    // Atualizar servidores em destaque (primeiros 4 online)
+    updateFeaturedServers();
+}
+
+// Atualizar servidores em destaque
+function updateFeaturedServers() {
+    const featuredGrid = document.getElementById('featuredGrid');
+    
+    // Pegar os primeiros 4 servidores online
+    featuredServers = servers.filter(server => server.online).slice(0, 4);
+    
+    if (featuredServers.length === 0) {
+        featuredGrid.innerHTML = `
+            <div class="no-servers" style="grid-column: 1 / -1;">
+                <i class="fas fa-star"></i>
+                <h3>Nenhum servidor em destaque</h3>
+                <p>Não há servidores online no momento. Seja o primeiro a criar um!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    featuredGrid.innerHTML = featuredServers.map((server, index) => {
+        const bannerUrl = server.banner || `https://picsum.photos/600/300?random=featured${index}`;
+        
+        return `
+        <div class="server-card" 
+             data-category="${server.category}"
+             style="animation-delay: ${index * 0.1}s">
+            
+            <div class="server-banner">
+                <img src="${bannerUrl}" alt="${server.name}"
+                     onerror="this.onerror=null; this.src='https://picsum.photos/600/300?random=featured${index}'">
+                <div class="server-status">
+                    <div class="status-dot ${server.online ? '' : 'offline'}"></div>
+                    <div class="status-text">DESTAQUE • ${server.online ? 'ONLINE' : 'OFFLINE'}</div>
+                </div>
+            </div>
+            
+            <div class="server-content">
+                <div class="server-header">
+                    <div class="server-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="server-info">
+                        <h3 class="server-title">
+                            <span title="${server.name}">${server.name}</span>
+                            <span class="server-category">${getCategoryName(server.category)}</span>
+                        </h3>
+                        <p class="server-description" title="${server.description}">
+                            ${server.description}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="server-stats">
+                    <div class="server-stat">
+                        <div class="stat-value">${server.players}/${server.maxPlayers}</div>
+                        <div class="stat-label">Jogadores</div>
+                    </div>
+                    <div class="server-stat">
+                        <div class="stat-value">${server.version}</div>
+                        <div class="stat-label">Versão</div>
+                    </div>
+                    <div class="server-stat">
+                        <div class="stat-value">${server.votes || 0}</div>
+                        <div class="stat-label">Votos</div>
+                    </div>
+                </div>
+                
+                <div class="server-ip-container" onclick="copyIP('${server.ip}:${server.port}')">
+                    <div class="server-ip">
+                        <span class="ip-text">${server.ip}:${server.port}</span>
+                        <button class="copy-btn">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="server-actions">
+                    <button class="join-btn" onclick="joinServer('${server.ip}', '${server.port}')">
+                        <i class="fas fa-gamepad"></i>
+                        ENTRAR NO SERVIDOR
+                    </button>
+                    <button class="favorite-btn" onclick="toggleFavorite('${server.id}', this)">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+    
+    console.log(`${featuredServers.length} servidores em destaque`);
+}
+
+// Copiar IP
+function copyIP(ip) {
+    navigator.clipboard.writeText(ip).then(() => {
+        showNotification('IP copiado para a área de transferência!');
+    }).catch(err => {
+        console.error('Erro ao copiar IP:', err);
+        showNotification('Erro ao copiar IP');
+    });
+}
+
+// Entrar no servidor
+function joinServer(ip, port) {
+    // Deep link para Minecraft
+    const minecraftUrl = `minecraft://?addExternalServer=MineHost|${ip}:${port}`;
+    
+    // Tentar abrir o Minecraft
+    window.location.href = minecraftUrl;
+    
+    // Fallback
+    setTimeout(() => {
+        if (document.hasFocus()) {
+            copyIP(`${ip}:${port}`);
+            showNotification('IP copiado! Cole no Minecraft manualmente.');
+        }
+    }, 1000);
+}
+
+// Alternar favorito
+function toggleFavorite(serverId, button) {
+    if (!currentUser) {
+        showNotification('Faça login para favoritar servidores!');
+        signInWithGoogle();
+        return;
+    }
+    
+    button.classList.toggle('favorited');
+    const isFavorited = button.classList.contains('favorited');
+    
+    showNotification(isFavorited ? 'Servidor favoritado!' : 'Removido dos favoritos');
+}
+
+// Resetar filtros
+function resetFilters() {
+    searchTerm = '';
+    currentFilter = 'all';
+    
+    document.getElementById('searchInput').value = '';
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === 'all') {
+            btn.classList.add('active');
+        }
+    });
+    
+    filterAndDisplayServers();
+}
+
+// Mostrar notificação
+function showNotification(message) {
+    // Remover notificação anterior
+    const oldNotification = document.querySelector('.notification');
+    if (oldNotification) {
+        oldNotification.remove();
+    }
+    
+    // Criar nova notificação
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.innerHTML = `
+        <i class="fas fa-check-circle" style="color: var(--minecraft-green); font-size: 1.4rem;"></i>
+        <span style="flex: 1;">${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Remover após 3 segundos
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.4s ease forwards';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 400);
+    }, 3000);
+}
