@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentUser = null;
     let servers = [];
     let filteredServers = [];
-    let featuredServers = [];
     let currentFilter = 'all';
     let searchTerm = '';
     let selectedForm = 1;
@@ -31,20 +30,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Verificar autenticação
             await checkAuth();
             
-            // Carregar servidores
+            // Carregar servidores (isso atualizará as estatísticas)
             await loadServers();
-            
-            // Carregar dados iniciais
-            await loadInitialData();
             
         } catch (error) {
             console.error('Erro na inicialização:', error);
             showNotification('Erro ao carregar dados. Tente novamente.');
         } finally {
-            // Finalizar loading
+            // Finalizar loading após um tempo mínimo
             setTimeout(() => {
                 finishLoading();
-            }, 1500);
+            }, 2000);
         }
     }
     
@@ -57,9 +53,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function simulateProgress() {
         let progress = 0;
         const progressBar = document.getElementById('loadingProgress');
-        const statServers = document.getElementById('statServers');
-        const statPlayers = document.getElementById('statPlayers');
-        const statOnline = document.getElementById('statOnline');
         
         if (!progressBar) {
             console.error('Elemento loadingProgress não encontrado');
@@ -70,29 +63,42 @@ document.addEventListener('DOMContentLoaded', function() {
             progress += 1;
             progressBar.style.width = progress + '%';
             
-            // Atualizar estatísticas durante o loading
-            if (statServers && progress <= 33) {
-                statServers.textContent = Math.floor(Math.random() * 100) + 50;
-            }
-            if (statPlayers && progress <= 66) {
-                statPlayers.textContent = Math.floor(Math.random() * 5000) + 1000;
-            }
-            if (statOnline && progress > 66) {
-                statOnline.textContent = Math.floor(Math.random() * 500) + 100;
-            }
-            
             if (progress >= 100) {
                 clearInterval(loadingInterval);
             }
         }, 20);
     }
     
+    // Função para atualizar estatísticas no loading
+    function updateLoadingStats() {
+        const statServers = document.getElementById('statServers');
+        const statPlayers = document.getElementById('statPlayers');
+        const statOnline = document.getElementById('statOnline');
+        
+        if (!statServers || !statPlayers || !statOnline) {
+            console.error('Elementos de estatísticas não encontrados');
+            return;
+        }
+        
+        // Aguardar um pouco para garantir que os dados foram carregados
+        setTimeout(() => {
+            const totalServers = servers.length;
+            const onlineServers = servers.filter(s => s.online).length;
+            const totalPlayers = servers.reduce((sum, server) => sum + (server.players || 0), 0);
+            
+            // Atualizar com valores REAIS
+            statServers.textContent = totalServers;
+            statPlayers.textContent = totalPlayers;
+            statOnline.textContent = onlineServers;
+        }, 500); // Pequeno delay para garantir que os dados foram processados
+    }
+    
     function finishLoading() {
-        const loadingScreen = document.getElementById('loadingScreen');
         if (loadingInterval) {
             clearInterval(loadingInterval);
         }
         
+        const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
             loadingScreen.classList.add('hidden');
             document.body.classList.remove('loading');
@@ -178,7 +184,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     retina_detect: true
                 });
-                console.log('✅ Particles inicializados');
             } catch (error) {
                 console.error('❌ Erro ao inicializar particles:', error);
             }
@@ -242,7 +247,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             console.error('❌ Erro ao inicializar Firebase:', error);
-            // Continuar sem Firebase (modo demo)
             window.firebase = null;
         }
     }
@@ -262,7 +266,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     : '<i class="fas fa-bars"></i>';
             });
             
-            // Close mobile menu when clicking outside
             document.addEventListener('click', function(event) {
                 if (!event.target.closest('.navbar') && navMenu.classList.contains('active')) {
                     navMenu.classList.remove('active');
@@ -281,17 +284,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     const targetElement = document.querySelector(targetId);
                     
                     if (targetElement) {
-                        // Update active link
                         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                         this.classList.add('active');
                         
-                        // Scroll to section
                         window.scrollTo({
                             top: targetElement.offsetTop - 80,
                             behavior: 'smooth'
                         });
                         
-                        // Close mobile menu if open
                         if (navMenu && navMenu.classList.contains('active')) {
                             navMenu.classList.remove('active');
                             document.body.classList.remove('menu-open');
@@ -341,11 +341,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                // Update active filter
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-                
-                // Update current filter
                 currentFilter = this.dataset.filter;
                 filterAndDisplayServers();
             });
@@ -361,11 +358,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('scroll', function() {
             const header = document.getElementById('header');
             if (header) {
-                if (window.scrollY > 100) {
-                    header.classList.add('scrolled');
-                } else {
-                    header.classList.remove('scrolled');
-                }
+                header.classList.toggle('scrolled', window.scrollY > 100);
             }
         });
         
@@ -401,7 +394,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             window.firebase.onAuthStateChanged(window.firebase.auth, async (user) => {
-                console.log('Estado da autenticação alterado:', user ? 'Usuário logado' : 'Nenhum usuário');
+                console.log('Estado da autenticação:', user ? 'Usuário logado' : 'Visitante');
                 
                 if (user) {
                     currentUser = user;
@@ -438,8 +431,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function signInWithGoogle() {
         if (!window.firebase) {
-            showNotification('Modo demonstração ativado. Para login completo, configure o Firebase.');
-            // Simulate login in demo mode
+            showNotification('Modo demonstração ativado');
             currentUser = {
                 displayName: 'Usuário Demo',
                 photoURL: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
@@ -484,22 +476,19 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // ===== DATA LOADING =====
-    async function loadInitialData() {
-        // Atualizar estatísticas iniciais
-        updateStats();
-        
-        // Atualizar servidores em destaque
-        updateFeaturedServers();
-    }
-    
     async function loadServers() {
         try {
             if (window.firebase) {
                 await loadServersFromFirebase();
             } else {
-                // Modo demo - carregar dados de exemplo
                 await loadDemoServers();
             }
+            
+            // Atualizar estatísticas no loading
+            updateLoadingStats();
+            
+            // Atualizar estatísticas na página principal
+            updateStats();
             
             // Inicializar servidores filtrados
             filteredServers = [...servers];
@@ -507,11 +496,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Exibir servidores
             displayServers();
             
+            // Atualizar servidores em destaque
+            updateFeaturedServers();
+            
         } catch (error) {
             console.error('Erro ao carregar servidores:', error);
             await loadDemoServers();
+            updateLoadingStats();
+            updateStats();
             filteredServers = [...servers];
             displayServers();
+            updateFeaturedServers();
         }
     }
     
@@ -534,16 +529,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     category: data.category || 'survival',
                     ip: data.ip || 'demo.minehost.com',
                     port: data.port || '25565',
-                    players: data.players || 0,
-                    maxPlayers: data.maxPlayers || 100,
+                    players: parseInt(data.players) || 0,
+                    maxPlayers: parseInt(data.maxPlayers) || 100,
                     online: data.online !== false,
                     version: data.version || '1.20.1',
                     ownerId: data.ownerId || '',
                     ownerName: data.ownerName || 'Administrador',
                     ownerAvatar: data.ownerAvatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
                     banner: data.banner || `https://picsum.photos/600/300?random=${doc.id}`,
-                    votes: data.votes || 0,
-                    views: data.views || 0,
+                    votes: parseInt(data.votes) || 0,
+                    views: parseInt(data.views) || 0,
                     createdAt: data.createdAt ? data.createdAt.toDate() : new Date()
                 });
             });
@@ -557,11 +552,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function loadDemoServers() {
+        // Somente usado se não houver Firebase
         const demoServers = [
             {
                 id: '1',
                 name: 'SkyBlock Extreme',
-                description: 'Servidor SkyBlock com economia avançada, desafios únicos e comunidade ativa. Venha construir seu paraíso nas nuvens!',
+                description: 'Servidor SkyBlock com economia avançada.',
                 category: 'survival',
                 ip: 'skyblock.minehost.com',
                 port: '25565',
@@ -571,94 +567,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 version: '1.20.1',
                 ownerName: 'SkyMaster',
                 ownerAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-                banner: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
+                banner: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f',
                 votes: 1245,
                 views: 8923
-            },
-            {
-                id: '2',
-                name: 'Creative Universe',
-                description: 'Mundo criativo ilimitado com proteção de terrenos e ferramentas avançadas para construção. Libere sua criatividade!',
-                category: 'creative',
-                ip: 'creative.minehost.com',
-                port: '25565',
-                players: 89,
-                maxPlayers: 200,
-                online: true,
-                version: '1.20.1',
-                ownerName: 'BuildMaster',
-                ownerAvatar: 'https://randomuser.me/api/portraits/women/44.jpg',
-                banner: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                votes: 876,
-                views: 6542
-            },
-            {
-                id: '3',
-                name: 'PvP Arena Champions',
-                description: 'Batalhas PvP intensas com diferentes arenas, ranking competitivo e prêmios semanais. Prove que você é o melhor!',
-                category: 'pvp',
-                ip: 'pvp.minehost.com',
-                port: '25565',
-                players: 256,
-                maxPlayers: 500,
-                online: true,
-                version: '1.20.1',
-                ownerName: 'BattleLord',
-                ownerAvatar: 'https://randomuser.me/api/portraits/men/67.jpg',
-                banner: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                votes: 2103,
-                views: 15432
-            },
-            {
-                id: '4',
-                name: 'Minigames Paradise',
-                description: 'Coleção completa de minigames: BedWars, SkyWars, Hunger Games e muito mais. Diversão garantida!',
-                category: 'minigames',
-                ip: 'minigames.minehost.com',
-                port: '25565',
-                players: 324,
-                maxPlayers: 600,
-                online: true,
-                version: '1.20.1',
-                ownerName: 'GameMaster',
-                ownerAvatar: 'https://randomuser.me/api/portraits/women/22.jpg',
-                banner: 'https://images.unsplash.com/photo-1593305841991-05c297ba4575?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                votes: 1876,
-                views: 12345
-            },
-            {
-                id: '5',
-                name: 'RPG Medieval',
-                description: 'Mundo de RPG épico com missões, classes únicas, NPCs e história envolvente. Viva uma aventura inesquecível!',
-                category: 'rpg',
-                ip: 'rpg.minehost.com',
-                port: '25565',
-                players: 98,
-                maxPlayers: 150,
-                online: true,
-                version: '1.20.1',
-                ownerName: 'StoryTeller',
-                ownerAvatar: 'https://randomuser.me/api/portraits/men/89.jpg',
-                banner: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                votes: 654,
-                views: 4321
-            },
-            {
-                id: '6',
-                name: 'Anarchy World',
-                description: 'Mundo anárquico sem regras. Sobreviva como puder em um ambiente totalmente PvP e sem proteções.',
-                category: 'pvp',
-                ip: 'anarchy.minehost.com',
-                port: '25565',
-                players: 187,
-                maxPlayers: 300,
-                online: true,
-                version: '1.20.1',
-                ownerName: 'ChaosLord',
-                ownerAvatar: 'https://randomuser.me/api/portraits/men/55.jpg',
-                banner: 'https://images.unsplash.com/photo-1531315630201-bb15abeb1653?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80',
-                votes: 432,
-                views: 5678
             }
         ];
         
@@ -684,7 +595,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (noResults) noResults.classList.add('hidden');
         
-        serversGrid.innerHTML = filteredServers.map((server, index) => {
+        serversGrid.innerHTML = filteredServers.map((server) => {
             const categoryIcon = getCategoryIcon(server.category);
             const categoryName = getCategoryName(server.category);
             
@@ -752,12 +663,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function filterAndDisplayServers() {
         filteredServers = servers.filter(server => {
-            // Filter by category
             if (currentFilter !== 'all' && server.category !== currentFilter) {
                 return false;
             }
             
-            // Filter by search term
             if (searchTerm) {
                 const searchable = `${server.name} ${server.description} ${server.category} ${getCategoryName(server.category)}`.toLowerCase();
                 if (!searchable.includes(searchTerm)) {
@@ -795,7 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateStats() {
         const totalServers = servers.length;
         const onlineServers = servers.filter(s => s.online).length;
-        const totalPlayers = servers.reduce((sum, server) => sum + server.players, 0);
+        const totalPlayers = servers.reduce((sum, server) => sum + (server.players || 0), 0);
         
         const totalServersEl = document.getElementById('totalServers');
         const onlineServersEl = document.getElementById('onlineServers');
@@ -889,7 +798,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         selectedServer = server;
         
-        // Update modal with server info
         const selectedServerName = document.getElementById('selectedServerName');
         const serverIp = document.getElementById('serverIp');
         const serverPort = document.getElementById('serverPort');
@@ -898,16 +806,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (serverIp) serverIp.value = server.ip;
         if (serverPort) serverPort.value = server.port;
         
-        // Generate connection code
         const code = generateConnectionCode(server);
         const connectionCode = document.getElementById('connectionCode');
         if (connectionCode) connectionCode.value = code;
         
-        // Show modal
         const modal = document.getElementById('formModal');
         if (modal) modal.classList.add('active');
         
-        // Reset form selection
         selectForm(1);
     };
     
@@ -919,7 +824,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.selectForm = function(formNumber) {
         selectedForm = formNumber;
         
-        // Update form options
         document.querySelectorAll('.form-option').forEach((option, index) => {
             if (index === formNumber - 1) {
                 option.classList.add('active');
@@ -928,7 +832,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Update form preview
         const codeField = document.getElementById('codeField');
         const codeInput = document.getElementById('connectionCode');
         
@@ -1143,13 +1046,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const ip = selectedServer.ip;
         const port = selectedServer.port;
         
-        // Minecraft deep link
         const minecraftUrl = `minecraft://?addExternalServer=MineHost|${ip}:${port}`;
-        
-        // Try to open Minecraft
         window.location.href = minecraftUrl;
         
-        // Fallback
         setTimeout(() => {
             if (document.hasFocus()) {
                 window.copyIP(`${ip}:${port}`);
@@ -1157,7 +1056,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 1000);
         
-        // Close modal
         window.closeFormModal();
     };
     
