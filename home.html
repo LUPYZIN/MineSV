@@ -1,76 +1,246 @@
-/* Reset básico */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MineHost - Descubra Servidores Minecraft</title>
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/732/732244.png">
+    
+    <!-- Fontes -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="home.css">
+</head>
+<body>
+    <!-- Loading Page -->
+    <div id="loading-page">
+        <div class="loading-content">
+            <div class="loading-header">
+                <div class="minecraft-loading">
+                    <div class="minecraft-cube">
+                        <div class="face front"></div>
+                        <div class="face back"></div>
+                        <div class="face right"></div>
+                        <div class="face left"></div>
+                        <div class="face top"></div>
+                        <div class="face bottom"></div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="loading-text">MineHost</div>
+                    <div class="loading-subtext">CARREGANDO MUNDOS...</div>
+                </div>
+            </div>
+            
+            <div class="loading-progress-container">
+                <div class="loading-progress" id="loading-progress"></div>
+            </div>
+            
+            <div class="loading-stats">
+                <div class="stat-item">
+                    <div class="stat-number" id="stat-servers">0</div>
+                    <div class="stat-label">Servidores</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="stat-players">0</div>
+                    <div class="stat-label">Jogadores</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="stat-online">0</div>
+                    <div class="stat-label">Online</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Particles Background -->
+    <div id="particles-js"></div>
+    
+    <!-- Header -->
+    <header id="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="#home" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <div class="logo-text">
+                        <div class="logo-main">MineHost</div>
+                        <div class="logo-sub">Servidores Públicos</div>
+                    </div>
+                </a>
+                
+                <div class="header-right">
+                    <nav class="nav-links">
+                        <a href="#home" class="nav-link">Início</a>
+                        <a href="#servers" class="nav-link">Servidores</a>
+                        <a href="#featured" class="nav-link">Destaques</a>
+                        <a href="#about" class="nav-link">Sobre</a>
+                    </nav>
+                    
+                    <div class="user-actions">
+                        <a href="criar.html" class="create-btn" id="createBtn">
+                            <i class="fas fa-plus"></i>
+                            <span>Criar Servidor</span>
+                        </a>
+                        
+                        <a href="perfil.html" class="user-profile hidden" id="userProfile">
+                            <div class="user-avatar">
+                                <img id="userAvatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar">
+                            </div>
+                            <div class="user-name" id="userName"></div>
+                        </a>
+                        
+                        <button class="login-btn" id="loginBtn">
+                            <i class="fab fa-google"></i>
+                            <span>Entrar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">DESCUBRA SERVIDORES MINECRAFT</h1>
+                <h2 class="hero-subtitle">Jogue nos melhores servidores públicos da comunidade</h2>
+                <p class="hero-description">
+                    Explore milhares de servidores Minecraft criados por jogadores como você. 
+                    Encontre aventuras épicas, minigames emocionantes e comunidades incríveis. 
+                    Tudo gratuito e com um clique para entrar!
+                </p>
+                
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <div class="hero-stat-number" id="totalServers">0</div>
+                        <div class="hero-stat-label">Servidores</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-number" id="totalPlayers">0</div>
+                        <div class="hero-stat-label">Jogadores Online</div>
+                    </div>
+                    <div class="hero-stat">
+                        <div class="hero-stat-number" id="onlineServers">0</div>
+                        <div class="hero-stat-label">Servidores Online</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Servers Section -->
+        <section class="servers-section" id="servers">
+            <div class="container">
+                <div class="section-title">
+                    <h2>SERVIDORES PÚBLICOS</h2>
+                </div>
+                
+                <div class="filters-container">
+                    <div class="filters-header">
+                        <h3 class="filters-title">
+                            <i class="fas fa-filter"></i>
+                            Filtrar Servidores
+                        </h3>
+                        
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="search-input" id="searchInput" 
+                                   placeholder="Buscar por nome, descrição ou categoria...">
+                        </div>
+                    </div>
+                    
+                    <div class="filters-grid" id="filtersGrid">
+                        <!-- Filtros serão gerados dinamicamente -->
+                    </div>
+                </div>
+                
+                <div class="servers-grid" id="serversGrid">
+                    <!-- Servidores serão carregados aqui -->
+                </div>
+                
+                <div class="no-servers hidden" id="noServers">
+                    <i class="fas fa-server"></i>
+                    <h3>Nenhum servidor encontrado</h3>
+                    <p>Não encontramos servidores que correspondam aos seus filtros. Tente ajustar as opções ou volte mais tarde!</p>
+                    <button class="join-btn" onclick="resetFilters()">
+                        <i class="fas fa-redo"></i>
+                        LIMPAR FILTROS
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Featured Section -->
+        <section class="featured-section" id="featured">
+            <div class="container">
+                <div class="section-title">
+                    <h2>DESTAQUES DA SEMANA</h2>
+                </div>
+                
+                <div class="servers-grid" id="featuredGrid">
+                    <!-- Servidores em destaque serão carregados aqui -->
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer id="about">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <a href="#home" class="logo">
+                        <div class="logo-text">
+                            <div class="logo-main">MineHost</div>
+                            <div class="logo-sub">Comunidade Minecraft</div>
+                        </div>
+                    </a>
+                    <p class="footer-text">
+                        A maior plataforma de descoberta de servidores Minecraft. 
+                        Conecte-se com milhares de jogadores e descubra novos mundos para explorar.
+                    </p>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Links Rápidos</h3>
+                    <ul>
+                        <li><a href="#home"><i class="fas fa-arrow-right"></i> Início</a></li>
+                        <li><a href="#servers"><i class="fas fa-arrow-right"></i> Todos Servidores</a></li>
+                        <li><a href="#featured"><i class="fas fa-arrow-right"></i> Destaques</a></li>
+                        <li><a href="criar.html"><i class="fas fa-arrow-right"></i> Criar Servidor</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Suporte</h3>
+                    <ul>
+                        <li><a href="#"><i class="fas fa-arrow-right"></i> Ajuda & FAQ</a></li>
+                        <li><a href="#"><i class="fas fa-arrow-right"></i> Contato</a></li>
+                        <li><a href="#"><i class="fas fa-arrow-right"></i> Termos de Uso</a></li>
+                        <li><a href="#"><i class="fas fa-arrow-right"></i> Política de Privacidade</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                &copy; 2023 MineHost. Todos os direitos reservados. 
+                Minecraft é uma marca registrada da Mojang Studios.
+            </div>
+        </div>
+    </footer>
 
-:root {
-    --minecraft-green: #55FF55;
-    --minecraft-dark: #2D2D2D;
-    --minecraft-gray: #3C3C3C;
-    --minecraft-light: #F0F0F0;
-    --minecraft-blue: #5555FF;
-    --minecraft-purple: #AA00AA;
-    --minecraft-orange: #FFAA00;
-}
-
-body {
-    font-family: 'Rajdhani', sans-serif;
-    background-color: var(--minecraft-dark);
-    color: var(--minecraft-light);
-    overflow-x: hidden;
-}
-
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-/* Header */
-#header {
-    background-color: rgba(45, 45, 45, 0.95);
-    backdrop-filter: blur(10px);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    border-bottom: 2px solid var(--minecraft-green);
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    text-decoration: none;
-    color: white;
-}
-
-.logo-icon {
-    font-size: 2rem;
-    color: var(--minecraft-green);
-    margin-right: 10px;
-}
-
-.logo-main {
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: var(--minecraft-green);
-}
-
-.logo-sub {
-    font-size: 0.8rem;
-    color: #aaa;
-}
-
-/* Continue com o resto do CSS... */
-/* (Você precisará copiar todo o CSS que estava dentro da tag <style>) */
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+    <script src="home.js"></script>
+</body>
+</html>
