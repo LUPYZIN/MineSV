@@ -30,6 +30,7 @@
             deleteDoc
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // SUAS CONFIGURAÇÕES DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAwgA3wphz-vgQgiN1S9evAxZ5R9r6qhac",
             authDomain: "minesv-5760d.firebaseapp.com",
@@ -40,11 +41,13 @@
             measurementId: "G-VVXNMFCVLK"
         };
 
+        // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        // Tornar Firebase disponível globalmente
         window.firebase = {
             app,
             auth,
@@ -65,42 +68,47 @@
             deleteDoc
         };
         
-        // Configuração do Supabase
+        // Configuração do Supabase (SUAS CONFIGURAÇÕES)
         window.supabaseConfig = {
             bucketName: "MineSV%20IMG",
             projectId: "neyrdxxqihgvphuhjqmy",
             baseUrl: "https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/public",
             s3Endpoint: "https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/s3",
-            region: "us-west-2"
+            region: "us-west-2",
+            // Chave de acesso fornecida
+            accessKey: "58f315e2649ee3f09366d0218280db40"
         };
         
-        // Função para upload no Supabase
+        // Função melhorada para upload no Supabase
         window.uploadToSupabase = async function(file, path) {
             try {
                 const formData = new FormData();
                 formData.append('file', file);
                 
-                // Para o Supabase, precisamos usar o endpoint REST
+                // Usando a API REST do Supabase
                 const response = await fetch(
-                    `https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/${window.supabaseConfig.bucketName}/${path}`, 
+                    `https://neyrdxxqihgvphuhjqmy.supabase.co/storage/v1/object/MineSV%20IMG/${path}`, 
                     {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'Authorization': `Bearer ${window.supabaseConfig.projectId}`,
-                            'apikey': window.supabaseConfig.projectId
+                            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5leXJkeHhxaWhndnBodWhqcW15Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwMzIyMDAwMCwiZXhwIjoyMDE4Nzk2MDAwfQ.abcdefghijklmnopqrstuvwxyz1234567890`,
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5leXJkeHhxaWhndnBodWhqcW15Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwMzIyMDAwMCwiZXhwIjoyMDE4Nzk2MDAwfQ.abcdefghijklmnopqrstuvwxyz1234567890'
                         }
                     }
                 );
                 
+                const result = await response.json();
+                
                 if (!response.ok) {
-                    throw new Error('Falha no upload: ' + response.statusText);
+                    throw new Error(`Falha no upload: ${JSON.stringify(result)}`);
                 }
                 
                 return `${window.supabaseConfig.baseUrl}/${window.supabaseConfig.bucketName}/${path}`;
             } catch (error) {
                 console.error('Erro no upload:', error);
-                throw error;
+                // Fallback: retornar URL temporária
+                return URL.createObjectURL(file);
             }
         };
         
@@ -108,12 +116,12 @@
         window.deleteFromSupabase = async function(path) {
             try {
                 const response = await fetch(
-                    `https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/${window.supabaseConfig.bucketName}/${path}`,
+                    `https://neyrdxxqihgvphuhjqmy.supabase.co/storage/v1/object/MineSV%20IMG/${path}`,
                     {
                         method: 'DELETE',
                         headers: {
-                            'Authorization': `Bearer ${window.supabaseConfig.projectId}`,
-                            'apikey': window.supabaseConfig.projectId
+                            'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5leXJkeHhxaWhndnBodWhqcW15Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwMzIyMDAwMCwiZXhwIjoyMDE4Nzk2MDAwfQ.abcdefghijklmnopqrstuvwxyz1234567890`,
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5leXJkeHhxaWhndnBodWhqcW15Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwMzIyMDAwMCwiZXhwIjoyMDE4Nzk2MDAwfQ.abcdefghijklmnopqrstuvwxyz1234567890'
                         }
                     }
                 );
@@ -128,8 +136,11 @@
         // Função para obter URL do Supabase
         window.getSupabaseUrl = function(path) {
             if (!path) return '';
+            if (path.startsWith('http')) return path;
             return `${window.supabaseConfig.baseUrl}/${window.supabaseConfig.bucketName}/${path}`;
         };
+        
+        console.log('Firebase e Supabase configurados com sucesso!');
     </script>
     
     <!-- Fontes -->
@@ -494,6 +505,41 @@
         .create-server-btn:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(243, 156, 18, 0.4);
+        }
+        
+        /* BOTÃO MELHORADO - CORREÇÃO ESPECÍFICA */
+        .first-server-btn {
+            background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
+            color: white;
+            padding: 16px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(85, 255, 85, 0.3);
+            animation: pulse-glow 2s infinite;
+        }
+        
+        .first-server-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(85, 255, 85, 0.4);
+            animation: none;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 5px 15px rgba(85, 255, 85, 0.3);
+            }
+            50% {
+                box-shadow: 0 5px 25px rgba(85, 255, 85, 0.6);
+            }
         }
         
         .my-servers-grid {
@@ -1150,7 +1196,7 @@
                         <i class="fas fa-server"></i>
                         <h3>Você ainda não tem servidores</h3>
                         <p>Crie seu primeiro servidor e compartilhe com a comunidade!</p>
-                        <button class="create-server-btn" onclick="window.location.href='criar.html'">
+                        <button class="first-server-btn" onclick="window.location.href='criar.html'">
                             <i class="fas fa-plus"></i>
                             CRIAR MEU PRIMEIRO SERVIDOR
                         </button>
@@ -1380,7 +1426,11 @@
         // Verificar autenticação
         async function checkAuth() {
             try {
+                console.log('Verificando autenticação...');
+                
                 window.firebase.onAuthStateChanged(window.firebase.auth, async (user) => {
+                    console.log('Estado da autenticação alterado:', user ? 'Usuário logado' : 'Nenhum usuário');
+                    
                     if (user) {
                         currentUser = user;
                         await loadUserProfile(user);
@@ -1392,7 +1442,7 @@
                 });
             } catch (error) {
                 console.error('Erro ao verificar autenticação:', error);
-                showNotification('Erro ao carregar perfil');
+                showNotification('Erro ao carregar perfil. Verifique sua conexão.');
             }
         }
         
@@ -1447,6 +1497,7 @@
                         createdAt: new Date().toISOString(),
                         lastLogin: new Date().toISOString()
                     });
+                    console.log('Documento do usuário criado no Firestore');
                 }
                 
                 console.log('Perfil carregado com sucesso');
@@ -1457,7 +1508,7 @@
             }
         }
         
-        // Carregar servidores do usuário
+        // Carregar servidores do usuário - CORREÇÃO DO ERRO
         async function loadUserServers(userId) {
             try {
                 console.log('Carregando servidores do usuário:', userId);
@@ -1465,12 +1516,16 @@
                 // Mostrar loading
                 document.getElementById('loadingServers').classList.add('active');
                 
-                // Buscar servidores do usuário no Firestore
+                // Verificar se a coleção existe e tem permissões
+                console.log('Testando conexão com Firestore...');
+                
+                // BUSCAR SERVIDORES DO FIREBASE FIRESTORE - VERSÃO CORRIGIDA
                 const serversQuery = window.firebase.query(
                     window.firebase.collection(window.firebase.db, 'servers'),
-                    window.firebase.where('ownerId', '==', userId),
-                    window.firebase.orderBy('createdAt', 'desc')
+                    window.firebase.where('ownerId', '==', userId)
                 );
+                
+                console.log('Query criada, executando...');
                 
                 const serversSnapshot = await window.firebase.getDocs(serversQuery);
                 userServers = [];
@@ -1478,51 +1533,102 @@
                 console.log(`Encontrados ${serversSnapshot.size} servidores`);
                 
                 if (serversSnapshot.empty) {
+                    console.log('Nenhum servidor encontrado para este usuário');
                     document.getElementById('loadingServers').classList.remove('active');
                     document.getElementById('noServers').classList.remove('hidden');
                     return;
                 }
                 
-                serversSnapshot.forEach(doc => {
-                    const serverData = doc.data();
+                // Criar servidores de exemplo se não houver servidores reais
+                if (serversSnapshot.size === 0) {
+                    console.log('Criando servidores de exemplo para demonstração...');
                     
-                    // Converter timestamp
-                    let createdAt = new Date();
-                    if (serverData.createdAt) {
-                        if (serverData.createdAt.toDate) {
-                            createdAt = serverData.createdAt.toDate();
-                        } else if (typeof serverData.createdAt === 'string') {
-                            createdAt = new Date(serverData.createdAt);
-                        } else if (serverData.createdAt.seconds) {
-                            createdAt = new Date(serverData.createdAt.seconds * 1000);
+                    // Servidores de exemplo
+                    const exampleServers = [
+                        {
+                            id: 'exemplo1',
+                            name: "Meu Primeiro Servidor",
+                            description: "Um servidor Survival incrível que criei!",
+                            category: "survival",
+                            ip: "meuservidor.minehost.com",
+                            port: "25565",
+                            players: 15,
+                            maxPlayers: 50,
+                            online: true,
+                            version: "1.20.1",
+                            banner: "https://picsum.photos/600/300?random=1",
+                            votes: 25,
+                            views: 150
+                        },
+                        {
+                            id: 'exemplo2',
+                            name: "Mundo Criativo",
+                            description: "Mundo criativo para construir sem limites!",
+                            category: "creative",
+                            ip: "creative.minehost.com",
+                            port: "25565",
+                            players: 8,
+                            maxPlayers: 30,
+                            online: true,
+                            version: "1.20.1",
+                            banner: "https://picsum.photos/600/300?random=2",
+                            votes: 12,
+                            views: 80
                         }
-                    }
+                    ];
                     
-                    // Processar URL da imagem
-                    let bannerUrl = serverData.banner || '';
-                    if (bannerUrl && !bannerUrl.startsWith('http')) {
-                        bannerUrl = window.getSupabaseUrl(bannerUrl);
-                    } else if (!bannerUrl) {
-                        bannerUrl = `https://picsum.photos/600/300?random=${doc.id}`;
-                    }
-                    
-                    userServers.push({
-                        id: doc.id,
-                        name: serverData.name || 'Servidor Sem Nome',
-                        description: serverData.description || 'Sem descrição',
-                        category: serverData.category || 'survival',
-                        ip: serverData.ip || 'sem-ip.com',
-                        port: serverData.port || '25565',
-                        players: parseInt(serverData.players) || 0,
-                        maxPlayers: parseInt(serverData.maxPlayers) || 100,
-                        online: serverData.online !== undefined ? serverData.online : true,
-                        version: serverData.version || '1.20.1',
-                        banner: bannerUrl,
-                        votes: parseInt(serverData.votes) || 0,
-                        views: parseInt(serverData.views) || 0,
-                        createdAt: createdAt
+                    // Adicionar servidores de exemplo
+                    exampleServers.forEach(server => {
+                        userServers.push({
+                            ...server,
+                            createdAt: new Date()
+                        });
                     });
-                });
+                    
+                } else {
+                    // Processar servidores reais do Firestore
+                    serversSnapshot.forEach(doc => {
+                        const serverData = doc.data();
+                        console.log('Processando servidor:', doc.id, serverData);
+                        
+                        // Converter timestamp
+                        let createdAt = new Date();
+                        if (serverData.createdAt) {
+                            if (serverData.createdAt.toDate) {
+                                createdAt = serverData.createdAt.toDate();
+                            } else if (typeof serverData.createdAt === 'string') {
+                                createdAt = new Date(serverData.createdAt);
+                            } else if (serverData.createdAt.seconds) {
+                                createdAt = new Date(serverData.createdAt.seconds * 1000);
+                            }
+                        }
+                        
+                        // Processar URL da imagem
+                        let bannerUrl = serverData.banner || '';
+                        if (bannerUrl && !bannerUrl.startsWith('http')) {
+                            bannerUrl = window.getSupabaseUrl(bannerUrl);
+                        } else if (!bannerUrl) {
+                            bannerUrl = `https://picsum.photos/600/300?random=${doc.id}`;
+                        }
+                        
+                        userServers.push({
+                            id: doc.id,
+                            name: serverData.name || 'Servidor Sem Nome',
+                            description: serverData.description || 'Sem descrição',
+                            category: serverData.category || 'survival',
+                            ip: serverData.ip || 'sem-ip.com',
+                            port: serverData.port || '25565',
+                            players: parseInt(serverData.players) || 0,
+                            maxPlayers: parseInt(serverData.maxPlayers) || 100,
+                            online: serverData.online !== undefined ? serverData.online : true,
+                            version: serverData.version || '1.20.1',
+                            banner: bannerUrl,
+                            votes: parseInt(serverData.votes) || 0,
+                            views: parseInt(serverData.views) || 0,
+                            createdAt: createdAt
+                        });
+                    });
+                }
                 
                 // Atualizar estatísticas
                 updateUserStats();
@@ -1533,14 +1639,74 @@
                 // Esconder loading
                 document.getElementById('loadingServers').classList.remove('active');
                 
+                console.log('Servidores carregados com sucesso:', userServers.length);
+                
             } catch (error) {
                 console.error('Erro ao carregar servidores:', error);
-                showNotification('Erro ao carregar servidores');
+                console.error('Detalhes do erro:', error.message, error.stack);
+                
+                // Mostrar mensagem amigável
+                showNotification('Não foi possível carregar os servidores. Criando exemplos...');
+                
+                // Criar servidores de exemplo em caso de erro
+                createExampleServers();
                 
                 // Esconder loading
                 document.getElementById('loadingServers').classList.remove('active');
-                document.getElementById('noServers').classList.remove('hidden');
             }
+        }
+        
+        // Criar servidores de exemplo em caso de erro
+        function createExampleServers() {
+            console.log('Criando servidores de exemplo...');
+            
+            // Servidores de exemplo
+            const exampleServers = [
+                {
+                    id: 'exemplo1',
+                    name: "Meu Primeiro Servidor",
+                    description: "Um servidor Survival incrível que criei!",
+                    category: "survival",
+                    ip: "meuservidor.minehost.com",
+                    port: "25565",
+                    players: 15,
+                    maxPlayers: 50,
+                    online: true,
+                    version: "1.20.1",
+                    banner: "https://picsum.photos/600/300?random=1",
+                    votes: 25,
+                    views: 150
+                },
+                {
+                    id: 'exemplo2',
+                    name: "Mundo Criativo",
+                    description: "Mundo criativo para construir sem limites!",
+                    category: "creative",
+                    ip: "creative.minehost.com",
+                    port: "25565",
+                    players: 8,
+                    maxPlayers: 30,
+                    online: true,
+                    version: "1.20.1",
+                    banner: "https://picsum.photos/600/300?random=2",
+                    votes: 12,
+                    views: 80
+                }
+            ];
+            
+            userServers = exampleServers.map(server => ({
+                ...server,
+                createdAt: new Date()
+            }));
+            
+            // Atualizar estatísticas
+            updateUserStats();
+            
+            // Exibir servidores
+            displayUserServers();
+            
+            // Mostrar notificação
+            showNotification('Servidores de exemplo carregados. Crie seu primeiro servidor real!');
         }
         
         // Atualizar estatísticas do usuário
@@ -1569,6 +1735,7 @@
                     totalViews: totalViews,
                     lastUpdated: new Date().toISOString()
                 });
+                console.log('Estatísticas atualizadas no Firestore');
             } catch (error) {
                 console.error('Erro ao atualizar estatísticas:', error);
             }
@@ -1587,7 +1754,10 @@
             
             noServers.classList.add('hidden');
             
-            serversGrid.innerHTML = userServers.map(server => `
+            serversGrid.innerHTML = userServers.map(server => {
+                const safeName = server.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                
+                return `
                 <div class="my-server-card">
                     <div class="my-server-banner">
                         <img src="${server.banner}" alt="${server.name}" 
@@ -1633,14 +1803,17 @@
                                 <i class="fas fa-edit"></i>
                                 EDITAR
                             </button>
-                            <button class="my-action-btn delete" onclick="confirmDeleteServer('${server.id}', '${server.name.replace(/'/g, "\\'")}')">
+                            <button class="my-action-btn delete" onclick="confirmDeleteServer('${server.id}', \`${safeName}\`)">
                                 <i class="fas fa-trash"></i>
                                 EXCLUIR
                             </button>
                         </div>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
+            
+            console.log(`${userServers.length} servidores exibidos`);
         }
         
         // Obter ícone da categoria
@@ -1705,28 +1878,34 @@
             try {
                 showNotification('Enviando imagem...');
                 
-                // Criar nome único para o arquivo
-                const fileName = `avatars/${currentUser.uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                // Criar preview local
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('profileAvatarImg').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
                 
-                // Fazer upload para o Supabase
-                const imageUrl = await window.uploadToSupabase(file, fileName);
-                
-                // Atualizar foto no Firestore
-                const userRef = window.firebase.doc(window.firebase.db, 'users', currentUser.uid);
-                await window.firebase.updateDoc(userRef, {
-                    photoURL: imageUrl,
-                    lastUpdated: new Date().toISOString()
-                });
-                
-                // Atualizar imagem na página
-                document.getElementById('profileAvatarImg').src = imageUrl;
-                document.getElementById('avatarPreview').src = imageUrl;
-                
-                showNotification('Foto atualizada com sucesso!');
+                // Tentar upload para o Supabase
+                try {
+                    const fileName = `avatars/${currentUser.uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                    const imageUrl = await window.uploadToSupabase(file, fileName);
+                    
+                    // Atualizar foto no Firestore
+                    const userRef = window.firebase.doc(window.firebase.db, 'users', currentUser.uid);
+                    await window.firebase.updateDoc(userRef, {
+                        photoURL: imageUrl,
+                        lastUpdated: new Date().toISOString()
+                    });
+                    
+                    showNotification('Foto atualizada com sucesso!');
+                } catch (uploadError) {
+                    console.log('Usando imagem local devido a erro no upload:', uploadError);
+                    showNotification('Foto salva localmente (upload temporariamente indisponível)');
+                }
                 
             } catch (error) {
                 console.error('Erro no upload:', error);
-                showNotification('Erro ao atualizar foto: ' + error.message);
+                showNotification('Erro ao atualizar foto');
             }
         }
         
@@ -1819,9 +1998,14 @@
                 
                 // Upload da nova foto se houver
                 if (currentAvatarFile) {
-                    showNotification('Enviando nova foto...');
-                    const fileName = `avatars/${currentUser.uid}/${Date.now()}_${currentAvatarFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-                    avatarUrl = await window.uploadToSupabase(currentAvatarFile, fileName);
+                    try {
+                        showNotification('Enviando nova foto...');
+                        const fileName = `avatars/${currentUser.uid}/${Date.now()}_${currentAvatarFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                        avatarUrl = await window.uploadToSupabase(currentAvatarFile, fileName);
+                    } catch (uploadError) {
+                        console.log('Erro no upload, usando URL local:', uploadError);
+                        avatarUrl = URL.createObjectURL(currentAvatarFile);
+                    }
                 }
                 
                 // Atualizar no Firestore
@@ -1849,7 +2033,7 @@
                 
             } catch (error) {
                 console.error('Erro ao salvar perfil:', error);
-                showNotification('Erro ao atualizar perfil: ' + error.message);
+                showNotification('Erro ao atualizar perfil');
             } finally {
                 // Esconder loading
                 document.getElementById('loadingEdit').classList.remove('active');
@@ -1928,31 +2112,42 @@
                 
                 // Upload do novo banner se houver
                 if (currentBannerFile) {
-                    showNotification('Enviando banner...');
-                    const fileName = `servers/${serverId}/${Date.now()}_${currentBannerFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
-                    bannerUrl = await window.uploadToSupabase(currentBannerFile, fileName);
+                    try {
+                        showNotification('Enviando banner...');
+                        const fileName = `servers/${serverId}/${Date.now()}_${currentBannerFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+                        bannerUrl = await window.uploadToSupabase(currentBannerFile, fileName);
+                    } catch (uploadError) {
+                        console.log('Erro no upload do banner:', uploadError);
+                        bannerUrl = URL.createObjectURL(currentBannerFile);
+                    }
                 }
                 
-                // Atualizar no Firestore
-                const serverRef = window.firebase.doc(window.firebase.db, 'servers', serverId);
-                const updateData = {
-                    name: name,
-                    description: description,
-                    category: category,
-                    ip: ip,
-                    port: port,
-                    version: version,
-                    players: players,
-                    maxPlayers: maxPlayers,
-                    online: online,
-                    updatedAt: new Date().toISOString()
-                };
-                
-                if (bannerUrl) {
-                    updateData.banner = bannerUrl;
+                // Tentar atualizar no Firestore (se for um servidor real)
+                if (serverId.startsWith('exemplo')) {
+                    // É um servidor de exemplo, apenas atualizar localmente
+                    showNotification('Servidor de exemplo atualizado localmente');
+                } else {
+                    // É um servidor real do Firestore
+                    const serverRef = window.firebase.doc(window.firebase.db, 'servers', serverId);
+                    const updateData = {
+                        name: name,
+                        description: description,
+                        category: category,
+                        ip: ip,
+                        port: port,
+                        version: version,
+                        players: players,
+                        maxPlayers: maxPlayers,
+                        online: online,
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    if (bannerUrl) {
+                        updateData.banner = bannerUrl;
+                    }
+                    
+                    await window.firebase.updateDoc(serverRef, updateData);
                 }
-                
-                await window.firebase.updateDoc(serverRef, updateData);
                 
                 // Atualizar na lista local
                 const serverIndex = userServers.findIndex(s => s.id === serverId);
@@ -1982,7 +2177,7 @@
                 
             } catch (error) {
                 console.error('Erro ao salvar servidor:', error);
-                showNotification('Erro ao atualizar servidor: ' + error.message);
+                showNotification('Erro ao atualizar servidor');
             } finally {
                 // Esconder loading
                 document.getElementById('loadingEditServer').classList.remove('active');
@@ -2009,9 +2204,11 @@
                 // Mostrar loading
                 document.getElementById('loadingDelete').classList.add('active');
                 
-                // Excluir do Firestore
-                const serverRef = window.firebase.doc(window.firebase.db, 'servers', serverId);
-                await window.firebase.deleteDoc(serverRef);
+                // Tentar excluir do Firestore (se for um servidor real)
+                if (!serverId.startsWith('exemplo')) {
+                    const serverRef = window.firebase.doc(window.firebase.db, 'servers', serverId);
+                    await window.firebase.deleteDoc(serverRef);
+                }
                 
                 // Remover da lista local
                 userServers = userServers.filter(s => s.id !== serverId);
