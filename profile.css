@@ -93,18 +93,21 @@ body {
     right: 0;
     z-index: 1000;
     padding: 0.8rem 0;
+    height: 70px; /* Altura fixa */
 }
 
 .navbar {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 20px;
+    height: 100%;
 }
 
 .nav-container {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    height: 100%;
 }
 
 .logo a {
@@ -262,7 +265,7 @@ body {
 
 /* ===== PROFILE CONTAINER ===== */
 .profile-container {
-    padding-top: 90px;
+    padding-top: 90px; /* Aumentado para header fixo */
     min-height: calc(100vh - 90px);
     max-width: 1400px;
     margin: 0 auto;
@@ -394,6 +397,7 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0; /* Para permitir que o conteúdo quebre */
 }
 
 .stat-icon {
@@ -405,11 +409,13 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    flex-shrink: 0; /* Impedir que o ícone encolha */
 }
 
 .stat-content {
     display: flex;
     flex-direction: column;
+    min-width: 0; /* Permitir que o texto quebre */
 }
 
 .stat-value {
@@ -417,6 +423,7 @@ body {
     font-size: 20px;
     font-weight: 700;
     font-family: 'Orbitron', sans-serif;
+    white-space: nowrap; /* Impedir quebra de linha */
 }
 
 .stat-label {
@@ -424,6 +431,7 @@ body {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap; /* Impedir quebra de linha */
 }
 
 /* ===== PROFILE ACTIONS ===== */
@@ -448,6 +456,7 @@ body {
     justify-content: center;
     gap: 8px;
     transition: all 0.3s ease;
+    width: 100%; /* Garantir que ocupe toda a largura */
 }
 
 .btn-action:hover {
@@ -497,6 +506,7 @@ body {
     align-items: center;
     gap: 10px;
     transition: transform 0.3s ease;
+    min-width: 0; /* Corrigir problema de overflow */
 }
 
 .stat-box:hover {
@@ -516,11 +526,14 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    flex-shrink: 0; /* Impedir que o ícone encolha */
 }
 
 .stat-info {
     display: flex;
     flex-direction: column;
+    min-width: 0; /* Permitir que o texto quebre */
+    flex: 1; /* Ocupar espaço restante */
 }
 
 .value {
@@ -528,6 +541,9 @@ body {
     font-size: 18px;
     font-weight: 700;
     font-family: 'Orbitron', sans-serif;
+    white-space: nowrap; /* Impedir quebra de linha */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Adicionar "..." se muito longo */
 }
 
 .label {
@@ -535,6 +551,9 @@ body {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap; /* Impedir quebra de linha */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Adicionar "..." se muito longo */
 }
 
 /* ===== PROFILE CONTENT ===== */
@@ -578,6 +597,29 @@ body {
 .section-title p {
     color: #8892b0;
     font-size: 13px;
+}
+
+/* ===== BOTÃO "ADICIONAR SERVIDOR" ===== */
+.btn-create {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #00ff88, #7b61ff);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    margin-left: auto; /* Empurrar para direita */
+}
+
+.btn-create:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 255, 136, 0.3);
 }
 
 /* ===== SERVER CARDS ===== */
@@ -682,6 +724,7 @@ body {
 
 .server-info {
     flex: 1;
+    min-width: 0; /* Permitir quebra de texto */
 }
 
 .server-title {
@@ -692,6 +735,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap; /* Permitir quebra se necessário */
 }
 
 .server-category {
@@ -701,12 +745,18 @@ body {
     border-radius: 12px;
     font-size: 10px;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .server-description {
     color: #8892b0;
     font-size: 13px;
     line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 
 .server-stats {
@@ -721,6 +771,7 @@ body {
 
 .server-stat {
     text-align: center;
+    min-width: 0; /* Permitir quebra */
 }
 
 .server-stat .value {
@@ -729,6 +780,7 @@ body {
     font-weight: 700;
     font-family: 'Orbitron', sans-serif;
     margin-bottom: 3px;
+    white-space: nowrap;
 }
 
 .server-stat .label {
@@ -736,6 +788,7 @@ body {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .server-actions {
@@ -777,6 +830,7 @@ body {
     justify-content: center;
     font-size: 15px;
     transition: all 0.3s ease;
+    flex-shrink: 0; /* Impedir que encolham */
 }
 
 .btn-edit {
@@ -826,26 +880,6 @@ body {
 .no-featured p {
     color: #8892b0;
     margin-bottom: 20px;
-}
-
-.btn-create {
-    padding: 10px 20px;
-    background: linear-gradient(135deg, #00ff88, #7b61ff);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-}
-
-.btn-create:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 15px rgba(0, 255, 136, 0.3);
 }
 
 /* ===== PLANOS ===== */
@@ -1599,13 +1633,20 @@ tbody td {
     }
     
     .profile-container {
-        padding: 75px 10px 15px;
+        padding: 85px 10px 15px; /* Ajustado para header mobile */
     }
     
     .section-header.with-button {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: stretch; /* Alterado para stretch */
         gap: 12px;
+    }
+    
+    .btn-create {
+        margin-left: 0; /* Remover margem automática */
+        align-self: center; /* Centralizar no mobile */
+        width: 100%; /* Ocupar toda largura no mobile */
+        max-width: 300px; /* Limitar largura máxima */
     }
     
     .servers-grid {
@@ -1624,22 +1665,29 @@ tbody td {
     .stat-item {
         justify-content: flex-start;
     }
+    
+    /* MODAIS NO MOBILE - LARGURA COMPLETA */
+    .modal-content {
+        width: 95%;
+        max-width: none;
+        border-radius: 15px;
+        margin: 10px;
+        max-height: 90vh;
+    }
+    
+    .modal-body {
+        padding: 18px;
+    }
+    
+    .modal-header {
+        padding: 18px;
+    }
 }
 
 @media (max-width: 576px) {
     .profile-card,
     .quick-stats,
     .section-card {
-        padding: 18px;
-    }
-    
-    .modal-content {
-        padding: 0;
-        width: 95%;
-    }
-    
-    .modal-header,
-    .modal-body {
         padding: 18px;
     }
     
@@ -1676,6 +1724,10 @@ tbody td {
     
     .payment-tab {
         padding: 10px;
+    }
+    
+    .btn-create {
+        max-width: 100%; /* Ocupar toda largura em telas muito pequenas */
     }
 }
 
@@ -1748,12 +1800,6 @@ img {
 /* ===== AJUSTES FINAIS ===== */
 .section-card:last-child {
     margin-bottom: 30px;
-}
-
-.btn-create,
-.btn-plan,
-.btn-action {
-    white-space: nowrap;
 }
 
 /* ===== ANIMAÇÕES ADICIONAIS ===== */
