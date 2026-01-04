@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedForm = 1;
     let selectedServer = null;
     let loadingInterval = null;
+    let isLoading = true;
     
     // Inicialização
     async function init() {
@@ -37,15 +38,19 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erro na inicialização:', error);
             showNotification('Erro ao carregar dados. Tente novamente.');
         } finally {
-            // Finalizar loading após um tempo mínimo
+            // Forçar fim do loading após 3 segundos no máximo
             setTimeout(() => {
-                finishLoading();
-            }, 2000);
+                if (isLoading) {
+                    console.log('Forçando fim do loading...');
+                    finishLoading();
+                }
+            }, 3000);
         }
     }
     
     // ===== LOADING =====
     function startLoading() {
+        isLoading = true;
         document.body.classList.add('loading');
         simulateProgress();
     }
@@ -56,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!progressBar) {
             console.error('Elemento loadingProgress não encontrado');
+            finishLoading();
             return;
         }
         
@@ -69,31 +75,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 20);
     }
     
-    // Função para atualizar estatísticas no loading
-    function updateLoadingStats() {
-        const statServers = document.getElementById('statServers');
-        const statPlayers = document.getElementById('statPlayers');
-        const statOnline = document.getElementById('statOnline');
-        
-        if (!statServers || !statPlayers || !statOnline) {
-            console.error('Elementos de estatísticas não encontrados');
-            return;
-        }
-        
-        // Aguardar um pouco para garantir que os dados foram carregados
-        setTimeout(() => {
-            const totalServers = servers.length;
-            const onlineServers = servers.filter(s => s.online).length;
-            const totalPlayers = servers.reduce((sum, server) => sum + (server.players || 0), 0);
-            
-            // Atualizar com valores REAIS
-            statServers.textContent = totalServers;
-            statPlayers.textContent = totalPlayers;
-            statOnline.textContent = onlineServers;
-        }, 500); // Pequeno delay para garantir que os dados foram processados
-    }
-    
     function finishLoading() {
+        if (!isLoading) return; // Já foi finalizado
+        
+        isLoading = false;
+        
         if (loadingInterval) {
             clearInterval(loadingInterval);
         }
@@ -106,6 +92,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingScreen.style.display = 'none';
             }, 500);
         }
+        
+        console.log('✅ Loading finalizado');
     }
     
     // ===== PARTICLES =====
@@ -184,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     retina_detect: true
                 });
+                console.log('✅ Particles inicializados');
             } catch (error) {
                 console.error('❌ Erro ao inicializar particles:', error);
             }
@@ -484,9 +473,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 await loadDemoServers();
             }
             
-            // Atualizar estatísticas no loading
-            updateLoadingStats();
-            
             // Atualizar estatísticas na página principal
             updateStats();
             
@@ -499,14 +485,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Atualizar servidores em destaque
             updateFeaturedServers();
             
+            // Finalizar loading com sucesso
+            finishLoading();
+            
         } catch (error) {
             console.error('Erro ao carregar servidores:', error);
             await loadDemoServers();
-            updateLoadingStats();
             updateStats();
             filteredServers = [...servers];
             displayServers();
             updateFeaturedServers();
+            
+            // Finalizar loading mesmo com erro
+            finishLoading();
         }
     }
     
@@ -710,9 +701,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const onlineServersEl = document.getElementById('onlineServers');
         const totalPlayersEl = document.getElementById('totalPlayers');
         
-        if (totalServersEl) totalServersEl.textContent = totalServers;
-        if (onlineServersEl) onlineServersEl.textContent = onlineServers;
-        if (totalPlayersEl) totalPlayersEl.textContent = totalPlayers.toLocaleString();
+        if (totalServersEl) {
+            totalServersEl.textContent = totalServers;
+            console.log('📊 Total de servidores:', totalServers);
+        }
+        if (onlineServersEl) {
+            onlineServersEl.textContent = onlineServers;
+            console.log('📊 Servidores online:', onlineServers);
+        }
+        if (totalPlayersEl) {
+            totalPlayersEl.textContent = totalPlayers.toLocaleString();
+            console.log('📊 Total de jogadores:', totalPlayers);
+        }
     }
     
     function updateFeaturedServers() {
