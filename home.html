@@ -1,25 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MineHost - Descubra Servidores Minecraft</title>
     <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/732/732244.png">
-    
+
     <!-- Fontes -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <!-- Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <!-- CSS -->
     <link rel="stylesheet" href="home.css">
-    
+
     <!-- Particles.js -->
     <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
 </head>
+
 <body>
     <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-progress-container">
+            <div class="loading-progress" id="loadingProgress"></div>
+        </div>
+        <div class="stat-number" id="statServers">0</div>
+        <div class="stat-number" id="statPlayers">0</div>
+        <div class="stat-number" id="statOnline">0</div>
+    </div>
+
     <div class="loading-screen" id="loadingScreen">
         <div class="loading-container">
             <div class="minecraft-loader">
@@ -58,6 +71,12 @@
     <div id="particles-js"></div>
 
     <!-- Header -->
+    <button id="menuToggle">...</button>
+    <nav id="navMenu">...</nav>
+    <button id="loginBtn">...</button>
+    <button id="createBtn">...</button>
+    <div id="userProfile">...</div>
+    <div id="username">...</div>
     <header class="header" id="header">
         <div class="container">
             <nav class="navbar">
@@ -98,14 +117,15 @@
                         <i class="fas fa-plus"></i>
                         <span>Criar Server</span>
                     </button>
-                    
+
                     <div class="user-profile hidden" id="userProfile">
                         <a href="perfil.html" class="profile-link">
-                            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar" class="avatar">
+                            <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar"
+                                class="avatar">
                             <span class="username" id="username">Usuário</span>
                         </a>
                     </div>
-                    
+
                     <button class="btn-login" id="loginBtn">
                         <i class="fab fa-google"></i>
                         <span>Entrar</span>
@@ -121,6 +141,10 @@
     </header>
 
     <!-- Hero Section -->
+    <div id="totalServers">0</div>
+    <div id="totalPlayers">0</div>
+    <div id="onlineServers">0</div>
+    <input id="heroSearch">
     <section class="hero" id="home">
         <div class="container">
             <div class="hero-content">
@@ -129,11 +153,11 @@
                     <span class="hero-subtitle">SERVIDORES MINECRAFT</span>
                 </h1>
                 <p class="hero-description">
-                    Conecte-se à maior comunidade de servidores Minecraft. 
-                    Encontre aventuras épicas, minigames emocionantes e comunidades incríveis. 
+                    Conecte-se à maior comunidade de servidores Minecraft.
+                    Encontre aventuras épicas, minigames emocionantes e comunidades incríveis.
                     Tudo gratuito e com um clique!
                 </p>
-                
+
                 <div class="hero-stats">
                     <div class="stat-card">
                         <div class="stat-icon">
@@ -178,6 +202,11 @@
     </section>
 
     <!-- Main Content -->
+    <input id="searchInput">
+    <div id="serversGrid"></div>
+    <div id="noResults"></div>
+    <button id="resetFilters"></button>
+    <div id="featuredGrid"></div>
     <main class="main">
         <!-- Servers Section -->
         <section class="section servers-section" id="servers">
@@ -197,7 +226,8 @@
                     <div class="filters-header">
                         <div class="search-container">
                             <i class="fas fa-search"></i>
-                            <input type="text" id="searchInput" placeholder="Buscar por nome, descrição ou categoria...">
+                            <input type="text" id="searchInput"
+                                placeholder="Buscar por nome, descrição ou categoria...">
                         </div>
                         <div class="filter-controls">
                             <button class="filter-btn active" data-filter="all">
@@ -270,14 +300,15 @@
                         SOBRE O MINEHOST
                     </h2>
                 </div>
-                
+
                 <div class="about-content">
                     <div class="about-card">
                         <div class="about-icon">
                             <i class="fas fa-shield-alt"></i>
                         </div>
                         <h3>Segurança Garantida</h3>
-                        <p>Todos os servidores são verificados para garantir uma experiência segura e livre de golpes.</p>
+                        <p>Todos os servidores são verificados para garantir uma experiência segura e livre de golpes.
+                        </p>
                     </div>
                     <div class="about-card">
                         <div class="about-icon">
@@ -325,7 +356,7 @@
                         </p>
                     </div>
                 </div>
-                
+
                 <div class="footer-section">
                     <h3>Links Rápidos</h3>
                     <ul class="footer-links">
@@ -335,7 +366,7 @@
                         <li><a href="#about">Sobre</a></li>
                     </ul>
                 </div>
-                
+
                 <div class="footer-section">
                     <h3>Recursos</h3>
                     <ul class="footer-links">
@@ -345,7 +376,7 @@
                         <li><a href="#">Blog da Comunidade</a></li>
                     </ul>
                 </div>
-                
+
                 <div class="footer-section">
                     <h3>Contato</h3>
                     <div class="social-links">
@@ -364,7 +395,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="footer-bottom">
                 <p>&copy; 2023 MineHost. Todos os direitos reservados.</p>
                 <p>Minecraft é uma marca registrada da Mojang Studios.</p>
@@ -398,7 +429,7 @@
                             <div class="radio-dot"></div>
                         </div>
                     </div>
-                    
+
                     <div class="form-option" onclick="selectForm(2)">
                         <div class="form-icon">
                             <i class="fas fa-shield-alt"></i>
@@ -411,7 +442,7 @@
                             <div class="radio-dot"></div>
                         </div>
                     </div>
-                    
+
                     <div class="form-option" onclick="selectForm(3)">
                         <div class="form-icon">
                             <i class="fas fa-code"></i>
@@ -425,13 +456,13 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="form-preview" id="formPreview">
                     <div class="form-header">
                         <h3><i class="fas fa-server"></i> Conectar ao Servidor</h3>
                         <p id="selectedServerName">Nome do Servidor</p>
                     </div>
-                    
+
                     <div class="form-content">
                         <div class="form-group">
                             <label for="serverIp">
@@ -440,7 +471,7 @@
                             </label>
                             <input type="text" id="serverIp" placeholder="Ex: play.exemplo.com" readonly>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="serverPort">
                                 <i class="fas fa-plug"></i>
@@ -448,7 +479,7 @@
                             </label>
                             <input type="text" id="serverPort" placeholder="25565" readonly>
                         </div>
-                        
+
                         <div class="form-group" id="codeField">
                             <label for="connectionCode">
                                 <i class="fas fa-key"></i>
@@ -456,7 +487,7 @@
                             </label>
                             <input type="text" id="connectionCode" placeholder="Gerado automaticamente" readonly>
                         </div>
-                        
+
                         <div class="form-actions">
                             <button class="btn-copy" onclick="copyConnectionDetails()">
                                 <i class="fas fa-copy"></i>
@@ -472,6 +503,10 @@
             </div>
         </div>
     </div>
+
+    <!-- MODALS -->
+    <div id="formModal">...</div>
+    <div id="serverModal">...</div>
 
     <!-- Server Details Modal -->
     <div class="modal" id="serverModal">
@@ -492,6 +527,8 @@
     </div>
 
     <!-- Notification -->
+    <div id="notification">...</div>
+    <div id="notificationText"></div>
     <div class="notification" id="notification">
         <div class="notification-content">
             <i class="fas fa-check-circle"></i>
@@ -502,4 +539,5 @@
     <!-- Scripts -->
     <script src="home.js"></script>
 </body>
+
 </html>
