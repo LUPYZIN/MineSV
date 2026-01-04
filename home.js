@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchTerm = '';
     let selectedForm = 1;
     let selectedServer = null;
+    let loadingInterval = null;
     
     // Inicialização
     async function init() {
@@ -60,109 +61,127 @@ document.addEventListener('DOMContentLoaded', function() {
         const statPlayers = document.getElementById('statPlayers');
         const statOnline = document.getElementById('statOnline');
         
-        const interval = setInterval(() => {
+        if (!progressBar) {
+            console.error('Elemento loadingProgress não encontrado');
+            return;
+        }
+        
+        loadingInterval = setInterval(() => {
             progress += 1;
-            if (progressBar) progressBar.style.width = progress + '%';
+            progressBar.style.width = progress + '%';
             
             // Atualizar estatísticas durante o loading
-            if (progress <= 33) {
+            if (statServers && progress <= 33) {
                 statServers.textContent = Math.floor(Math.random() * 100) + 50;
-            } else if (progress <= 66) {
+            }
+            if (statPlayers && progress <= 66) {
                 statPlayers.textContent = Math.floor(Math.random() * 5000) + 1000;
-            } else {
+            }
+            if (statOnline && progress > 66) {
                 statOnline.textContent = Math.floor(Math.random() * 500) + 100;
             }
             
             if (progress >= 100) {
-                clearInterval(interval);
+                clearInterval(loadingInterval);
             }
         }, 20);
     }
     
     function finishLoading() {
         const loadingScreen = document.getElementById('loadingScreen');
-        loadingScreen.classList.add('hidden');
-        document.body.classList.remove('loading');
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-        }, 500);
+        if (loadingInterval) {
+            clearInterval(loadingInterval);
+        }
+        
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            document.body.classList.remove('loading');
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
+        }
     }
     
     // ===== PARTICLES =====
     function initParticles() {
-        if (typeof particlesJS !== 'undefined') {
-            particlesJS('particles-js', {
-                particles: {
-                    number: {
-                        value: 80,
-                        density: {
-                            enable: true,
-                            value_area: 800
-                        }
-                    },
-                    color: {
-                        value: ["#00ff88", "#7b61ff", "#ff6b6b", "#ffb74d"]
-                    },
-                    shape: {
-                        type: "circle"
-                    },
-                    opacity: {
-                        value: 0.6,
-                        random: true,
-                        anim: {
-                            enable: true,
-                            speed: 1,
-                            opacity_min: 0.1,
-                            sync: false
-                        }
-                    },
-                    size: {
-                        value: 3,
-                        random: true,
-                        anim: {
-                            enable: true,
-                            speed: 2,
-                            size_min: 0.1,
-                            sync: false
-                        }
-                    },
-                    line_linked: {
-                        enable: true,
-                        distance: 150,
-                        color: "#00ff88",
-                        opacity: 0.2,
-                        width: 1
-                    },
-                    move: {
-                        enable: true,
-                        speed: 1.5,
-                        direction: "none",
-                        random: true,
-                        straight: false,
-                        out_mode: "out",
-                        bounce: false,
-                        attract: {
-                            enable: false,
-                            rotateX: 600,
-                            rotateY: 1200
-                        }
-                    }
-                },
-                interactivity: {
-                    detect_on: "canvas",
-                    events: {
-                        onhover: {
-                            enable: true,
-                            mode: "grab"
+        if (typeof particlesJS !== 'undefined' && document.getElementById('particles-js')) {
+            try {
+                particlesJS('particles-js', {
+                    particles: {
+                        number: {
+                            value: 80,
+                            density: {
+                                enable: true,
+                                value_area: 800
+                            }
                         },
-                        onclick: {
+                        color: {
+                            value: ["#00ff88", "#7b61ff", "#ff6b6b", "#ffb74d"]
+                        },
+                        shape: {
+                            type: "circle"
+                        },
+                        opacity: {
+                            value: 0.6,
+                            random: true,
+                            anim: {
+                                enable: true,
+                                speed: 1,
+                                opacity_min: 0.1,
+                                sync: false
+                            }
+                        },
+                        size: {
+                            value: 3,
+                            random: true,
+                            anim: {
+                                enable: true,
+                                speed: 2,
+                                size_min: 0.1,
+                                sync: false
+                            }
+                        },
+                        line_linked: {
                             enable: true,
-                            mode: "push"
+                            distance: 150,
+                            color: "#00ff88",
+                            opacity: 0.2,
+                            width: 1
+                        },
+                        move: {
+                            enable: true,
+                            speed: 1.5,
+                            direction: "none",
+                            random: true,
+                            straight: false,
+                            out_mode: "out",
+                            bounce: false,
+                            attract: {
+                                enable: false,
+                                rotateX: 600,
+                                rotateY: 1200
+                            }
                         }
-                    }
-                },
-                retina_detect: true
-            });
+                    },
+                    interactivity: {
+                        detect_on: "canvas",
+                        events: {
+                            onhover: {
+                                enable: true,
+                                mode: "grab"
+                            },
+                            onclick: {
+                                enable: true,
+                                mode: "push"
+                            }
+                        }
+                    },
+                    retina_detect: true
+                });
+                console.log('✅ Particles inicializados');
+            } catch (error) {
+                console.error('❌ Erro ao inicializar particles:', error);
+            }
         }
     }
     
@@ -234,22 +253,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const menuToggle = document.getElementById('menuToggle');
         const navMenu = document.getElementById('navMenu');
         
-        menuToggle.addEventListener('click', function() {
-            navMenu.classList.toggle('active');
-            document.body.classList.toggle('menu-open');
-            this.innerHTML = navMenu.classList.contains('active') 
-                ? '<i class="fas fa-times"></i>' 
-                : '<i class="fas fa-bars"></i>';
-        });
-        
-        // Close mobile menu when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!event.target.closest('.navbar') && navMenu.classList.contains('active')) {
-                navMenu.classList.remove('active');
-                document.body.classList.remove('menu-open');
-                menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
-            }
-        });
+        if (menuToggle && navMenu) {
+            menuToggle.addEventListener('click', function() {
+                navMenu.classList.toggle('active');
+                document.body.classList.toggle('menu-open');
+                this.innerHTML = navMenu.classList.contains('active') 
+                    ? '<i class="fas fa-times"></i>' 
+                    : '<i class="fas fa-bars"></i>';
+            });
+            
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.navbar') && navMenu.classList.contains('active')) {
+                    navMenu.classList.remove('active');
+                    document.body.classList.remove('menu-open');
+                    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            });
+        }
         
         // Navigation links
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -271,10 +292,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         
                         // Close mobile menu if open
-                        if (navMenu.classList.contains('active')) {
+                        if (navMenu && navMenu.classList.contains('active')) {
                             navMenu.classList.remove('active');
                             document.body.classList.remove('menu-open');
-                            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                            if (menuToggle) menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
                         }
                     }
                 }
@@ -282,30 +303,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Login button
-        document.getElementById('loginBtn').addEventListener('click', signInWithGoogle);
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+            loginBtn.addEventListener('click', signInWithGoogle);
+        }
         
         // Create server button
-        document.getElementById('createBtn').addEventListener('click', function(e) {
-            if (!currentUser) {
-                e.preventDefault();
-                showNotification('Faça login para criar um servidor!');
-                signInWithGoogle();
-            }
-        });
+        const createBtn = document.getElementById('createBtn');
+        if (createBtn) {
+            createBtn.addEventListener('click', function(e) {
+                if (!currentUser) {
+                    e.preventDefault();
+                    showNotification('Faça login para criar um servidor!');
+                    signInWithGoogle();
+                }
+            });
+        }
         
         // Search inputs
         const searchInput = document.getElementById('searchInput');
         const heroSearch = document.getElementById('heroSearch');
         
-        searchInput.addEventListener('input', function(e) {
-            searchTerm = e.target.value.toLowerCase().trim();
-            filterAndDisplayServers();
-        });
+        if (searchInput) {
+            searchInput.addEventListener('input', function(e) {
+                searchTerm = e.target.value.toLowerCase().trim();
+                filterAndDisplayServers();
+            });
+        }
         
-        heroSearch.addEventListener('input', function(e) {
-            searchTerm = e.target.value.toLowerCase().trim();
-            filterAndDisplayServers();
-        });
+        if (heroSearch) {
+            heroSearch.addEventListener('input', function(e) {
+                searchTerm = e.target.value.toLowerCase().trim();
+                filterAndDisplayServers();
+            });
+        }
         
         // Filter buttons
         document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -321,15 +352,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Reset filters button
-        document.getElementById('resetFilters').addEventListener('click', resetFilters);
+        const resetBtn = document.getElementById('resetFilters');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', resetFilters);
+        }
         
         // Header scroll effect
         window.addEventListener('scroll', function() {
             const header = document.getElementById('header');
-            if (window.scrollY > 100) {
-                header.classList.add('scrolled');
-            } else {
-                header.classList.remove('scrolled');
+            if (header) {
+                if (window.scrollY > 100) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
             }
         });
         
@@ -337,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', function() {
                 const modal = this.closest('.modal');
-                modal.classList.remove('active');
+                if (modal) modal.classList.remove('active');
             });
         });
         
@@ -353,7 +389,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Form selection
         document.querySelectorAll('.form-option').forEach(option => {
             option.addEventListener('click', function() {
-                selectForm(parseInt(this.dataset.form) || 1);
+                const formNumber = parseInt(this.getAttribute('data-form')) || 1;
+                selectForm(formNumber);
             });
         });
     }
@@ -364,6 +401,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             window.firebase.onAuthStateChanged(window.firebase.auth, async (user) => {
+                console.log('Estado da autenticação alterado:', user ? 'Usuário logado' : 'Nenhum usuário');
+                
                 if (user) {
                     currentUser = user;
                     await saveUserToFirestore(user);
@@ -424,21 +463,24 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateUIForUser(user) {
         const loginBtn = document.getElementById('loginBtn');
         const userProfile = document.getElementById('userProfile');
-        const username = document.getElementById('username');
-        const avatar = userProfile.querySelector('.avatar');
         
-        loginBtn.classList.add('hidden');
-        userProfile.classList.remove('hidden');
-        username.textContent = user.displayName || 'Usuário';
-        avatar.src = user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (userProfile) {
+            userProfile.classList.remove('hidden');
+            const username = document.getElementById('username');
+            const avatar = userProfile.querySelector('.avatar');
+            
+            if (username) username.textContent = user.displayName || 'Usuário';
+            if (avatar) avatar.src = user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+        }
     }
     
     function updateUIForGuest() {
         const loginBtn = document.getElementById('loginBtn');
         const userProfile = document.getElementById('userProfile');
         
-        loginBtn.classList.remove('hidden');
-        userProfile.classList.add('hidden');
+        if (loginBtn) loginBtn.classList.remove('hidden');
+        if (userProfile) userProfile.classList.add('hidden');
     }
     
     // ===== DATA LOADING =====
@@ -629,20 +671,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const serversGrid = document.getElementById('serversGrid');
         const noResults = document.getElementById('noResults');
         
-        if (filteredServers.length === 0) {
-            serversGrid.innerHTML = '';
-            noResults.classList.remove('hidden');
+        if (!serversGrid) {
+            console.error('Elemento serversGrid não encontrado');
             return;
         }
         
-        noResults.classList.add('hidden');
+        if (filteredServers.length === 0) {
+            serversGrid.innerHTML = '';
+            if (noResults) noResults.classList.remove('hidden');
+            return;
+        }
+        
+        if (noResults) noResults.classList.add('hidden');
         
         serversGrid.innerHTML = filteredServers.map((server, index) => {
             const categoryIcon = getCategoryIcon(server.category);
             const categoryName = getCategoryName(server.category);
             
             return `
-                <div class="server-card" data-id="${server.id}" onclick="openServerModal('${server.id}')">
+                <div class="server-card" data-id="${server.id}" onclick="window.openServerModal('${server.id}')">
                     <div class="server-banner">
                         <img src="${server.banner}" alt="${server.name}" 
                              onerror="this.src='https://picsum.photos/600/300?random=${server.id}'">
@@ -681,7 +728,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                         
-                        <div class="server-ip" onclick="event.stopPropagation(); copyIP('${server.ip}:${server.port}')">
+                        <div class="server-ip" onclick="event.stopPropagation(); window.copyIP('${server.ip}:${server.port}')">
                             <span class="ip-text">${server.ip}:${server.port}</span>
                             <button class="copy-btn">
                                 <i class="fas fa-copy"></i>
@@ -689,11 +736,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         
                         <div class="server-actions">
-                            <button class="btn-join" onclick="event.stopPropagation(); openFormModal('${server.id}')">
+                            <button class="btn-join" onclick="event.stopPropagation(); window.openFormModal('${server.id}')">
                                 <i class="fas fa-gamepad"></i>
                                 ENTRAR
                             </button>
-                            <button class="btn-favorite" onclick="event.stopPropagation(); toggleFavorite('${server.id}', this)">
+                            <button class="btn-favorite" onclick="event.stopPropagation(); window.toggleFavorite('${server.id}', this)">
                                 <i class="fas fa-heart"></i>
                             </button>
                         </div>
@@ -728,8 +775,11 @@ document.addEventListener('DOMContentLoaded', function() {
         searchTerm = '';
         currentFilter = 'all';
         
-        document.getElementById('searchInput').value = '';
-        document.getElementById('heroSearch').value = '';
+        const searchInput = document.getElementById('searchInput');
+        const heroSearch = document.getElementById('heroSearch');
+        
+        if (searchInput) searchInput.value = '';
+        if (heroSearch) heroSearch.value = '';
         
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -747,13 +797,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const onlineServers = servers.filter(s => s.online).length;
         const totalPlayers = servers.reduce((sum, server) => sum + server.players, 0);
         
-        document.getElementById('totalServers').textContent = totalServers;
-        document.getElementById('onlineServers').textContent = onlineServers;
-        document.getElementById('totalPlayers').textContent = totalPlayers.toLocaleString();
+        const totalServersEl = document.getElementById('totalServers');
+        const onlineServersEl = document.getElementById('onlineServers');
+        const totalPlayersEl = document.getElementById('totalPlayers');
+        
+        if (totalServersEl) totalServersEl.textContent = totalServers;
+        if (onlineServersEl) onlineServersEl.textContent = onlineServers;
+        if (totalPlayersEl) totalPlayersEl.textContent = totalPlayers.toLocaleString();
     }
     
     function updateFeaturedServers() {
         const featuredGrid = document.getElementById('featuredGrid');
+        if (!featuredGrid) return;
+        
         const featuredServers = servers
             .filter(server => server.online)
             .sort((a, b) => b.players - a.players)
@@ -775,7 +831,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const categoryName = getCategoryName(server.category);
             
             return `
-                <div class="server-card" data-id="${server.id}" onclick="openServerModal('${server.id}')">
+                <div class="server-card" data-id="${server.id}" onclick="window.openServerModal('${server.id}')">
                     <div class="server-banner">
                         <img src="${server.banner}" alt="${server.name}"
                              onerror="this.src='https://picsum.photos/600/300?random=${server.id}'">
@@ -815,7 +871,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         
                         <div class="server-actions">
-                            <button class="btn-join" onclick="event.stopPropagation(); openFormModal('${server.id}')">
+                            <button class="btn-join" onclick="event.stopPropagation(); window.openFormModal('${server.id}')">
                                 <i class="fas fa-gamepad"></i>
                                 ENTRAR AGORA
                             </button>
@@ -834,17 +890,22 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedServer = server;
         
         // Update modal with server info
-        document.getElementById('selectedServerName').textContent = server.name;
-        document.getElementById('serverIp').value = server.ip;
-        document.getElementById('serverPort').value = server.port;
+        const selectedServerName = document.getElementById('selectedServerName');
+        const serverIp = document.getElementById('serverIp');
+        const serverPort = document.getElementById('serverPort');
+        
+        if (selectedServerName) selectedServerName.textContent = server.name;
+        if (serverIp) serverIp.value = server.ip;
+        if (serverPort) serverPort.value = server.port;
         
         // Generate connection code
         const code = generateConnectionCode(server);
-        document.getElementById('connectionCode').value = code;
+        const connectionCode = document.getElementById('connectionCode');
+        if (connectionCode) connectionCode.value = code;
         
         // Show modal
         const modal = document.getElementById('formModal');
-        modal.classList.add('active');
+        if (modal) modal.classList.add('active');
         
         // Reset form selection
         selectForm(1);
@@ -852,7 +913,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     window.closeFormModal = function() {
         const modal = document.getElementById('formModal');
-        modal.classList.remove('active');
+        if (modal) modal.classList.remove('active');
     };
     
     window.selectForm = function(formNumber) {
@@ -871,18 +932,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const codeField = document.getElementById('codeField');
         const codeInput = document.getElementById('connectionCode');
         
-        switch(formNumber) {
-            case 1:
-                codeField.style.display = 'none';
-                break;
-            case 2:
-                codeField.style.display = 'block';
-                codeInput.placeholder = 'Código de segurança gerado';
-                break;
-            case 3:
-                codeField.style.display = 'block';
-                codeInput.placeholder = 'Código personalizado';
-                break;
+        if (codeField && codeInput) {
+            switch(formNumber) {
+                case 1:
+                    codeField.style.display = 'none';
+                    break;
+                case 2:
+                    codeField.style.display = 'block';
+                    codeInput.placeholder = 'Código de segurança gerado';
+                    break;
+                case 3:
+                    codeField.style.display = 'block';
+                    codeInput.placeholder = 'Código personalizado';
+                    break;
+            }
         }
     };
     
@@ -893,7 +956,11 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedServer = server;
         
         const modal = document.getElementById('serverModal');
-        const modalBody = modal.querySelector('.modal-body');
+        const modalBody = modal?.querySelector('.modal-body');
+        const modalTitle = modal?.querySelector('#modalServerName');
+        
+        if (!modal || !modalBody || !modalTitle) return;
+        
         const categoryName = getCategoryName(server.category);
         
         modalBody.innerHTML = `
@@ -974,11 +1041,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 
                 <div class="form-actions">
-                    <button class="btn-copy" onclick="copyIP('${server.ip}:${server.port}')">
+                    <button class="btn-copy" onclick="window.copyIP('${server.ip}:${server.port}')">
                         <i class="fas fa-copy"></i>
                         Copiar IP
                     </button>
-                    <button class="btn-connect" onclick="openFormModal('${server.id}')">
+                    <button class="btn-connect" onclick="window.openFormModal('${server.id}')">
                         <i class="fas fa-gamepad"></i>
                         Conectar
                     </button>
@@ -986,7 +1053,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        modal.querySelector('#modalServerName').innerHTML = `
+        modalTitle.innerHTML = `
             <i class="fas fa-server"></i>
             ${server.name}
         `;
@@ -996,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     window.closeServerModal = function() {
         const modal = document.getElementById('serverModal');
-        modal.classList.remove('active');
+        if (modal) modal.classList.remove('active');
     };
     
     // ===== UTILITY FUNCTIONS =====
@@ -1054,13 +1121,15 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.copyConnectionDetails = function() {
-        const ip = document.getElementById('serverIp').value;
-        const port = document.getElementById('serverPort').value;
-        const code = document.getElementById('connectionCode').value;
+        const ip = document.getElementById('serverIp');
+        const port = document.getElementById('serverPort');
+        const code = document.getElementById('connectionCode');
         
-        let details = `IP: ${ip}:${port}`;
-        if (selectedForm !== 1) {
-            details += `\nCódigo: ${code}`;
+        if (!ip || !port) return;
+        
+        let details = `IP: ${ip.value}:${port.value}`;
+        if (selectedForm !== 1 && code && code.value) {
+            details += `\nCódigo: ${code.value}`;
         }
         
         navigator.clipboard.writeText(details).then(() => {
@@ -1083,13 +1152,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Fallback
         setTimeout(() => {
             if (document.hasFocus()) {
-                copyIP(`${ip}:${port}`);
+                window.copyIP(`${ip}:${port}`);
                 showNotification('IP copiado! Cole no Minecraft manualmente.');
             }
         }, 1000);
         
         // Close modal
-        closeFormModal();
+        window.closeFormModal();
     };
     
     window.toggleFavorite = function(serverId, button) {
@@ -1110,6 +1179,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notificationText');
         
+        if (!notification || !notificationText) return;
+        
         notificationText.textContent = message;
         notification.classList.add('show');
         
@@ -1123,13 +1194,4 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Expor funções globalmente
     window.resetFilters = resetFilters;
-    window.openFormModal = openFormModal;
-    window.closeFormModal = closeFormModal;
-    window.selectForm = selectForm;
-    window.openServerModal = openServerModal;
-    window.closeServerModal = closeServerModal;
-    window.copyIP = copyIP;
-    window.copyConnectionDetails = copyConnectionDetails;
-    window.connectToServer = connectToServer;
-    window.toggleFavorite = toggleFavorite;
 });
