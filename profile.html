@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - MineHost</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+    <!-- Tela de Loading -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-content">
+            <div class="cube-container">
+                <div class="cube">
+                    <div class="face front"></div>
+                    <div class="face back"></div>
+                    <div class="face right"></div>
+                    <div class="face left"></div>
+                    <div class="face top"></div>
+                    <div class="face bottom"></div>
+                </div>
+            </div>
+            <p>Carregando perfil...</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header id="header" class="header">
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="logo">
+                    <a href="home.html">
+                        <i class="fas fa-server"></i>
+                        <span>Mine<span class="gradient-text">Host</span></span>
+                    </a>
+                </div>
+
+                <button id="menuToggle" class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <div id="navMenu" class="nav-menu">
+                    <a href="home.html" class="nav-link"><i class="fas fa-home"></i> Início</a>
+                    <a href="#stats" class="nav-link"><i class="fas fa-chart-line"></i> Estatísticas</a>
+                    <a href="#servers" class="nav-link"><i class="fas fa-gamepad"></i> Meus Servidores</a>
+                    <a href="#payments" class="nav-link"><i class="fas fa-credit-card"></i> Pagamentos</a>
+                </div>
+
+                <div class="nav-actions">
+                    <div id="userProfile" class="user-profile hidden">
+                        <div class="user-info">
+                            <span id="username" class="username">Usuário</span>
+                            <div class="avatar-dropdown">
+                                <img id="userAvatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar">
+                                <div class="dropdown-menu">
+                                    <a href="profile.html" class="dropdown-item"><i class="fas fa-user"></i> Meu Perfil</a>
+                                    <a href="#settings" class="dropdown-item"><i class="fas fa-cog"></i> Configurações</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="#" class="dropdown-item logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sair</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="loginBtn" class="btn-login">
+                        <i class="fab fa-google"></i> Login
+                    </button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="profile-container">
+        <!-- Sidebar -->
+        <aside class="profile-sidebar">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="avatar-upload">
+                        <img id="profileAvatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Avatar">
+                        <button class="upload-btn" id="uploadAvatar">
+                            <i class="fas fa-camera"></i>
+                        </button>
+                    </div>
+                    <h2 id="profileName">Carregando...</h2>
+                    <p id="profileEmail" class="profile-email">carregando@exemplo.com</p>
+                    <div class="profile-badges" id="profileBadges">
+                        <!-- Badges serão carregados dinamicamente -->
+                    </div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="userServersCount">0</span>
+                            <span class="stat-label">Servidores</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="userFavoritesCount">0</span>
+                            <span class="stat-label">Favoritos</span>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="userFeaturedCount">0</span>
+                            <span class="stat-label">Em Destaque</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="btn-action" id="createServerBtn">
+                        <i class="fas fa-plus"></i> Criar Servidor
+                    </button>
+                    <button class="btn-action secondary" id="editProfileBtn">
+                        <i class="fas fa-edit"></i> Editar Perfil
+                    </button>
+                </div>
+            </div>
+
+            <div class="quick-stats">
+                <h3><i class="fas fa-chart-bar"></i> Estatísticas Rápidas</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-icon success">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="value" id="totalPlayers">0</span>
+                            <span class="label">Jogadores</span>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="value" id="totalViews">0</span>
+                            <span class="label">Visualizações</span>
+                        </div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-icon danger">
+                            <i class="fas fa-vote-yea"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="value" id="totalVotes">0</span>
+                            <span class="label">Votos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="profile-content">
+            <!-- Seção de Servidores em Destaque -->
+            <section class="section-card" id="stats">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2><i class="fas fa-star"></i> Servidores em Destaque</h2>
+                        <p>Servidores que estão aparecendo na página inicial</p>
+                    </div>
+                </div>
+                <div id="featuredServers" class="servers-grid">
+                    <!-- Carregado via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Seção de Meus Servidores -->
+            <section class="section-card" id="servers">
+                <div class="section-header with-button">
+                    <div class="section-title">
+                        <h2><i class="fas fa-server"></i> Meus Servidores</h2>
+                        <p>Gerencie todos os seus servidores em um só lugar</p>
+                    </div>
+                    <button class="btn-create" id="addServerBtn">
+                        <i class="fas fa-plus"></i> Adicionar Servidor
+                    </button>
+                </div>
+                <div id="userServers" class="servers-grid">
+                    <!-- Carregado via JavaScript -->
+                </div>
+            </section>
+
+            <!-- Seção de Pagamentos -->
+            <section class="section-card" id="payments">
+                <div class="section-header">
+                    <div class="section-title">
+                        <h2><i class="fas fa-credit-card"></i> Planos de Destaque</h2>
+                        <p>Destaque seu servidor na página inicial</p>
+                    </div>
+                </div>
+
+                <div class="plans-grid">
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <h3>Básico</h3>
+                            <div class="plan-price">
+                                <span class="currency">R$</span>
+                                <span class="amount">19,90</span>
+                                <span class="period">/semana</span>
+                            </div>
+                        </div>
+                        <div class="plan-features">
+                            <p><i class="fas fa-check"></i> Destaque por 7 dias</p>
+                            <p><i class="fas fa-check"></i> Badge "Em Destaque"</p>
+                            <p><i class="fas fa-check"></i> Posição prioritária</p>
+                            <p><i class="fas fa-times"></i> Banner exclusivo</p>
+                            <p><i class="fas fa-times"></i> Estatísticas avançadas</p>
+                        </div>
+                        <button class="btn-plan" data-plan="basic">
+                            <i class="fas fa-bolt"></i> Selecionar Plano
+                        </button>
+                    </div>
+
+                    <div class="plan-card featured">
+                        <div class="plan-badge">POPULAR</div>
+                        <div class="plan-header">
+                            <h3>Premium</h3>
+                            <div class="plan-price">
+                                <span class="currency">R$</span>
+                                <span class="amount">49,90</span>
+                                <span class="period">/mês</span>
+                            </div>
+                        </div>
+                        <div class="plan-features">
+                            <p><i class="fas fa-check"></i> Destaque por 30 dias</p>
+                            <p><i class="fas fa-check"></i> Badge "Premium"</p>
+                            <p><i class="fas fa-check"></i> Posição topo da lista</p>
+                            <p><i class="fas fa-check"></i> Banner exclusivo</p>
+                            <p><i class="fas fa-check"></i> Estatísticas avançadas</p>
+                        </div>
+                        <button class="btn-plan" data-plan="premium">
+                            <i class="fas fa-crown"></i> Selecionar Plano
+                        </button>
+                    </div>
+
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <h3>VIP</h3>
+                            <div class="plan-price">
+                                <span class="currency">R$</span>
+                                <span class="amount">99,90</span>
+                                <span class="period">/mês</span>
+                            </div>
+                        </div>
+                        <div class="plan-features">
+                            <p><i class="fas fa-check"></i> Destaque permanente</p>
+                            <p><i class="fas fa-check"></i> Badge "VIP" exclusiva</p>
+                            <p><i class="fas fa-check"></i> Topo da lista + banner</p>
+                            <p><i class="fas fa-check"></i> Anúncio especial</p>
+                            <p><i class="fas fa-check"></i> Suporte prioritário</p>
+                        </div>
+                        <button class="btn-plan" data-plan="vip">
+                            <i class="fas fa-gem"></i> Selecionar Plano
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Histórico de Pagamentos -->
+                <div class="payment-history">
+                    <h3><i class="fas fa-history"></i> Histórico de Pagamentos</h3>
+                    <div class="table-container">
+                        <table id="paymentHistoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Histórico será carregado aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal de Edição de Perfil -->
+    <div id="editProfileModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-edit"></i> Editar Perfil</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="form-group">
+                        <label for="editName"><i class="fas fa-user"></i> Nome de Exibição</label>
+                        <input type="text" id="editName" placeholder="Seu nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editBio"><i class="fas fa-align-left"></i> Biografia</label>
+                        <textarea id="editBio" placeholder="Conte um pouco sobre você..." rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary modal-close">Cancelar</button>
+                        <button type="submit" class="btn-primary">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Criar/Editar Servidor -->
+    <div id="serverModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="serverModalTitle"><i class="fas fa-server"></i> Novo Servidor</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="serverForm">
+                    <input type="hidden" id="serverId">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serverName"><i class="fas fa-heading"></i> Nome do Servidor</label>
+                            <input type="text" id="serverName" placeholder="Ex: SkyBlock Extreme" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverCategory"><i class="fas fa-tag"></i> Categoria</label>
+                            <select id="serverCategory" required>
+                                <option value="survival">Survival</option>
+                                <option value="creative">Creative</option>
+                                <option value="pvp">PvP</option>
+                                <option value="rpg">RPG</option>
+                                <option value="minigames">Minigames</option>
+                                <option value="modded">Modded</option>
+                                <option value="skyblock">SkyBlock</option>
+                                <option value="bedwars">BedWars</option>
+                                <option value="factions">Factions</option>
+                                <option value="hardcore">Hardcore</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverDescription"><i class="fas fa-align-left"></i> Descrição</label>
+                        <textarea id="serverDescription" placeholder="Descreva seu servidor..." rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serverIP"><i class="fas fa-network-wired"></i> Endereço IP</label>
+                            <input type="text" id="serverIP" placeholder="exemplo.minehost.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverPort"><i class="fas fa-plug"></i> Porta</label>
+                            <input type="text" id="serverPort" placeholder="25565" value="25565" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="serverVersion"><i class="fas fa-code-branch"></i> Versão do Minecraft</label>
+                            <input type="text" id="serverVersion" placeholder="1.20.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="serverMaxPlayers"><i class="fas fa-users"></i> Máx. Jogadores</label>
+                            <input type="number" id="serverMaxPlayers" min="1" max="1000" value="100" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="serverBanner"><i class="fas fa-image"></i> URL do Banner</label>
+                        <input type="url" id="serverBanner" placeholder="https://exemplo.com/banner.jpg">
+                        <small class="help-text">Recomendado: 1200x400 pixels</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-danger" id="deleteServerBtn" style="display: none;">
+                            <i class="fas fa-trash"></i> Excluir Servidor
+                        </button>
+                        <div>
+                            <button type="button" class="btn-secondary modal-close">Cancelar</button>
+                            <button type="submit" class="btn-primary" id="saveServerBtn">Salvar Servidor</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Pagamento -->
+    <div id="paymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-credit-card"></i> Finalizar Pagamento</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-summary">
+                    <h4 id="paymentPlanName">Plano Premium</h4>
+                    <div class="price-display">
+                        <span class="amount" id="paymentAmount">R$ 49,90</span>
+                        <span class="period" id="paymentPeriod">/mês</span>
+                    </div>
+                    <p id="paymentDescription">Destaque por 30 dias com todas as vantagens Premium</p>
+                </div>
+
+                <div class="payment-tabs">
+                    <button class="payment-tab active" data-method="pix">
+                        <i class="fas fa-qrcode"></i> PIX
+                    </button>
+                    <button class="payment-tab" data-method="card">
+                        <i class="fas fa-credit-card"></i> Cartão
+                    </button>
+                </div>
+
+                <div class="payment-content">
+                    <div id="pixContent" class="payment-method active">
+                        <div class="pix-instructions">
+                            <p>1. Abra o app do seu banco</p>
+                            <p>2. Escaneie o QR Code abaixo</p>
+                            <p>3. Confirme o pagamento</p>
+                        </div>
+                        <div class="pix-qrcode">
+                            <div class="qrcode-placeholder">
+                                <i class="fas fa-qrcode"></i>
+                                <p>QR Code será gerado após a confirmação</p>
+                            </div>
+                        </div>
+                        <div class="pix-code">
+                            <label>Código PIX (Copia e Cola):</label>
+                            <div class="code-display">
+                                <code id="pixCode">00020101021226940014BR.GOV.BCB.PIX0123minehost@pagamento.com5204000053039865802BR5913MINEHOST LTDA6008BRASILIA62070503***6304E2CA</code>
+                                <button class="btn-copy" onclick="copyToClipboard('#pixCode')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="cardContent" class="payment-method">
+                        <form id="cardForm">
+                            <div class="form-group">
+                                <label for="cardNumber">Número do Cartão</label>
+                                <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="cardExpiry">Validade (MM/AA)</label>
+                                    <input type="text" id="cardExpiry" placeholder="MM/AA" maxlength="5">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cardCVC">CVC</label>
+                                    <input type="text" id="cardCVC" placeholder="123" maxlength="3">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="cardName">Nome no Cartão</label>
+                                <input type="text" id="cardName" placeholder="Seu Nome">
+                            </div>
+                            <div class="form-group">
+                                <label for="cardCPF">CPF do Titular</label>
+                                <input type="text" id="cardCPF" placeholder="000.000.000-00">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="payment-actions">
+                    <button class="btn-secondary modal-close">Cancelar</button>
+                    <button class="btn-primary" id="confirmPaymentBtn">
+                        <i class="fas fa-lock"></i> Confirmar Pagamento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="confirmTitle"></h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+                <div class="confirm-actions">
+                    <button class="btn-secondary" id="confirmCancel">Cancelar</button>
+                    <button class="btn-danger" id="confirmAction">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificação -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="notificationText"></span>
+        </div>
+    </div>
+
+    <script src="profile.js"></script>
+</body>
+</html>
