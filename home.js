@@ -50,14 +50,25 @@ document.addEventListener('DOMContentLoaded', function () {
         let progress = 0;
         const progressBar = document.getElementById('loadingProgress');
         const loadingInterval = setInterval(() => {
-            if (progress < 100) { progress += 2; if (progressBar) { progressBar.style.width = progress + '%'; } } else {
+            if (progress < 100) {
+                progress += 2;
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+            } else {
                 clearInterval(loadingInterval);
             }
         }, 30);
-    } function finishLoading() {
-        console.log('✅ Finalizando loading...'); //
-    Remover classe de loading do body document.body.classList.remove('loading'); // Esconder a tela de loading const
-        loadingScreen = document.getElementById('loadingScreen'); if (loadingScreen) {
+    }
+
+    function finishLoading() {
+        console.log('✅ Finalizando loading...');
+        // Remover classe de loading do body
+        document.body.classList.remove('loading');
+        
+        // Esconder a tela de loading
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
             loadingScreen.classList.add('hidden');
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
@@ -120,7 +131,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 getAuth,
                 GoogleAuthProvider,
                 signInWithPopup,
-                onAuthStateChanged
+                onAuthStateChanged,
+                signOut
             } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
             const {
                 getFirestore,
@@ -129,7 +141,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 query,
                 orderBy,
                 doc,
-                setDoc
+                setDoc,
+                addDoc,
+                updateDoc,
+                deleteDoc,
+                where,
+                serverTimestamp
             } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
             const firebaseConfig = {
@@ -142,6 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 appId: "1:1028898660834:web:19399da70912b70737d9bb",
                 measurementId: "G-VVXNMFCVLK"
             };
+            
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
@@ -154,19 +172,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 provider,
                 signInWithPopup,
                 onAuthStateChanged,
+                signOut,
                 collection,
                 getDocs,
                 query,
                 orderBy,
                 doc,
-                setDoc
+                setDoc,
+                addDoc,
+                updateDoc,
+                deleteDoc,
+                where,
+                serverTimestamp
             };
 
             console.log('✅ Firebase inicializado');
 
         } catch (error) {
             console.error('❌ Erro ao inicializar Firebase:', error);
-            window.firebase = null;
+            showNotification('Erro ao conectar com o servidor. Tente novamente.');
         }
     }
 
@@ -225,10 +249,16 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         });
 
-        // Botão de login
+        // Botão de login/logout
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
             loginBtn.addEventListener('click', signInWithGoogle);
+        }
+
+        // Botão de logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', signOutUser);
         }
 
         // Botão de criar servidor
@@ -307,6 +337,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 selectForm(formNumber);
             });
         });
+
+        // Envio do formulário de conexão
+        const connectForm = document.getElementById('connectForm');
+        if (connectForm) {
+            connectForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                connectToServer();
+            });
+        }
     }
 
     // ===== AUTHENTICATION =====
@@ -340,9 +379,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 displayName: user.displayName || 'Usuário',
                 email: user.email || '',
                 photoURL: user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-                lastLogin: new Date().toISOString(),
-                createdAt: new Date().toISOString()
+                lastLogin: window.firebase.serverTimestamp(),
+                createdAt: window.firebase.serverTimestamp()
             }, { merge: true });
+            
+            console.log('✅ Usuário salvo no Firestore');
         } catch (error) {
             console.error('Erro ao salvar usuário:', error);
         }
@@ -350,12 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function signInWithGoogle() {
         if (!window.firebase) {
-            showNotification('Modo demonstração ativado');
-            currentUser = {
-                displayName: 'Usuário Demo',
-                photoURL: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'
-            };
-            updateUIForUser(currentUser);
+            showNotification('Erro: Firebase não inicializado');
             return;
         }
 
@@ -368,6 +404,20 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
             console.error('Erro no login:', error);
             showNotification('Erro ao fazer login com Google');
+        }
+    }
+
+    async function signOutUser() {
+        if (!window.firebase) return;
+
+        try {
+            await window.firebase.signOut(window.firebase.auth);
+            showNotification('Logout realizado com sucesso!');
+            currentUser = null;
+            updateUIForGuest();
+        } catch (error) {
+            console.error('Erro no logout:', error);
+            showNotification('Erro ao fazer logout');
         }
     }
 
@@ -397,11 +447,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // ===== DATA LOADING =====
     async function loadServers() {
         try {
-            if (window.firebase) {
-                await loadServersFromFirebase();
-            } else {
-                await loadDemoServers();
+            if (!window.firebase) {
+                throw new Error('Firebase não inicializado');
             }
+
+            await loadServersFromFirebase();
 
             // Atualizar estatísticas
             updateStats();
@@ -420,12 +470,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error('Erro ao carregar servidores:', error);
-            await loadDemoServers();
+            servers = [];
+            filteredServers = [];
             updateStats();
-            filteredServers = [...servers];
             displayServers();
             updateFeaturedServers();
             updateLoadingStats();
+            showNotification('Erro ao carregar servidores do banco de dados');
         }
     }
 
@@ -441,12 +492,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             serversSnapshot.forEach(doc => {
                 const data = doc.data();
+                const createdAt = data.createdAt ? data.createdAt.toDate() : new Date();
+                
                 servers.push({
                     id: doc.id,
                     name: data.name || 'Servidor Sem Nome',
                     description: data.description || 'Sem descrição',
                     category: data.category || 'survival',
-                    ip: data.ip || 'demo.minehost.com',
+                    ip: data.ip || '0.0.0.0',
                     port: data.port || '25565',
                     players: parseInt(data.players) || 0,
                     maxPlayers: parseInt(data.maxPlayers) || 100,
@@ -458,41 +511,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     banner: data.banner || `https://picsum.photos/600/300?random=${doc.id}`,
                     votes: parseInt(data.votes) || 0,
                     views: parseInt(data.views) || 0,
-                    createdAt: data.createdAt ? data.createdAt.toDate() : new Date()
+                    createdAt: createdAt
                 });
             });
 
-            console.log(`✅ ${servers.length} servidores carregados`);
+            console.log(`✅ ${servers.length} servidores carregados do Firebase`);
 
         } catch (error) {
             console.error('❌ Erro ao carregar do Firebase:', error);
             throw error;
         }
-    }
-
-    async function loadDemoServers() {
-        // Dados de exemplo
-        servers = [
-            {
-                id: '1',
-                name: 'SkyBlock Extreme',
-                description: 'Servidor SkyBlock com economia avançada.',
-                category: 'survival',
-                ip: 'skyblock.minehost.com',
-                port: '25565',
-                players: 142,
-                maxPlayers: 300,
-                online: true,
-                version: '1.20.1',
-                ownerName: 'SkyMaster',
-                ownerAvatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-                banner: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f',
-                votes: 1245,
-                views: 8923
-            }
-        ];
-
-        console.log(`🎮 ${servers.length} servidores de demonstração`);
     }
 
     function updateLoadingStats() {
@@ -530,65 +558,65 @@ document.addEventListener('DOMContentLoaded', function () {
             const categoryName = getCategoryName(server.category);
 
             return `
-    <div class="server-card" data-id="${server.id}" onclick="window.openServerModal('${server.id}')">
-        <div class="server-banner">
-            <img src="${server.banner}" alt="${server.name}"
-                onerror="this.src='https://picsum.photos/600/300?random=${server.id}'">
-            <div class="server-status">
-                <div class="status-dot ${server.online ? '' : 'offline'}"></div>
-                <div class="status-text">${server.online ? 'ONLINE' : 'OFFLINE'}</div>
-            </div>
-        </div>
-
-        <div class="server-content">
-            <div class="server-header">
-                <div class="server-icon">
-                    <i class="fas fa-${categoryIcon}"></i>
-                </div>
-                <div class="server-info">
-                    <div class="server-title">
-                        ${server.name}
-                        <span class="server-category">${categoryName}</span>
+            <div class="server-card" data-id="${server.id}" onclick="window.openServerModal('${server.id}')">
+                <div class="server-banner">
+                    <img src="${server.banner}" alt="${server.name}"
+                        onerror="this.src='https://picsum.photos/600/300?random=${server.id}'">
+                    <div class="server-status">
+                        <div class="status-dot ${server.online ? '' : 'offline'}"></div>
+                        <div class="status-text">${server.online ? 'ONLINE' : 'OFFLINE'}</div>
                     </div>
-                    <p class="server-description">${server.description}</p>
                 </div>
-            </div>
 
-            <div class="server-stats">
-                <div class="server-stat">
-                    <div class="value">${server.players}/${server.maxPlayers}</div>
-                    <div class="label">Jogadores</div>
-                </div>
-                <div class="server-stat">
-                    <div class="value">${server.version}</div>
-                    <div class="label">Versão</div>
-                </div>
-                <div class="server-stat">
-                    <div class="value">${server.votes}</div>
-                    <div class="label">Votos</div>
-                </div>
-            </div>
+                <div class="server-content">
+                    <div class="server-header">
+                        <div class="server-icon">
+                            <i class="fas fa-${categoryIcon}"></i>
+                        </div>
+                        <div class="server-info">
+                            <div class="server-title">
+                                ${server.name}
+                                <span class="server-category">${categoryName}</span>
+                            </div>
+                            <p class="server-description">${server.description}</p>
+                        </div>
+                    </div>
 
-            <div class="server-ip" onclick="event.stopPropagation(); window.copyIP('${server.ip}:${server.port}')">
-                <span class="ip-text">${server.ip}:${server.port}</span>
-                <button class="copy-btn">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
+                    <div class="server-stats">
+                        <div class="server-stat">
+                            <div class="value">${server.players}/${server.maxPlayers}</div>
+                            <div class="label">Jogadores</div>
+                        </div>
+                        <div class="server-stat">
+                            <div class="value">${server.version}</div>
+                            <div class="label">Versão</div>
+                        </div>
+                        <div class="server-stat">
+                            <div class="value">${server.votes}</div>
+                            <div class="label">Votos</div>
+                        </div>
+                    </div>
 
-            <div class="server-actions">
-                <button class="btn-join" onclick="event.stopPropagation(); window.openFormModal('${server.id}')">
-                    <i class="fas fa-gamepad"></i>
-                    ENTRAR
-                </button>
-                <button class="btn-favorite"
-                    onclick="event.stopPropagation(); window.toggleFavorite('${server.id}', this)">
-                    <i class="fas fa-heart"></i>
-                </button>
+                    <div class="server-ip" onclick="event.stopPropagation(); window.copyIP('${server.ip}:${server.port}')">
+                        <span class="ip-text">${server.ip}:${server.port}</span>
+                        <button class="copy-btn">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+
+                    <div class="server-actions">
+                        <button class="btn-join" onclick="event.stopPropagation(); window.openFormModal('${server.id}')">
+                            <i class="fas fa-gamepad"></i>
+                            ENTRAR
+                        </button>
+                        <button class="btn-favorite"
+                            onclick="event.stopPropagation(); window.toggleFavorite('${server.id}', this)">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    `;
+            `;
         }).join('');
     }
 
@@ -602,7 +630,7 @@ document.addEventListener('DOMContentLoaded', function () {
             // Filtrar por busca
             if (searchTerm) {
                 const searchable = `${server.name} ${server.description} ${server.category}
-    ${getCategoryName(server.category)}`.toLowerCase();
+                ${getCategoryName(server.category)}`.toLowerCase();
                 if (!searchable.includes(searchTerm)) {
                     return false;
                 }
@@ -657,12 +685,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (featuredServers.length === 0) {
             featuredGrid.innerHTML = `
-    <div class="no-results">
-        <i class="fas fa-star"></i>
-        <h3>Sem servidores em destaque</h3>
-        <p>Nenhum servidor está online no momento</p>
-    </div>
-    `;
+            <div class="no-results">
+                <i class="fas fa-star"></i>
+                <h3>Sem servidores em destaque</h3>
+                <p>Nenhum servidor está online no momento</p>
+            </div>
+            `;
             return;
         }
 
@@ -670,54 +698,54 @@ document.addEventListener('DOMContentLoaded', function () {
             const categoryName = getCategoryName(server.category);
 
             return `
-    <div class="server-card" data-id="${server.id}" onclick="window.openServerModal('${server.id}')">
-        <div class="server-banner">
-            <img src="${server.banner}" alt="${server.name}"
-                onerror="this.src='https://picsum.photos/600/300?random=${server.id}'">
-            <div class="server-status">
-                <div class="status-dot"></div>
-                <div class="status-text">DESTAQUE</div>
-            </div>
-        </div>
-
-        <div class="server-content">
-            <div class="server-header">
-                <div class="server-icon" style="background: linear-gradient(135deg, #ffb74d, #ff6b6b);">
-                    <i class="fas fa-crown"></i>
-                </div>
-                <div class="server-info">
-                    <div class="server-title">
-                        ${server.name}
-                        <span class="server-category">${categoryName}</span>
+            <div class="server-card" data-id="${server.id}" onclick="window.openServerModal('${server.id}')">
+                <div class="server-banner">
+                    <img src="${server.banner}" alt="${server.name}"
+                        onerror="this.src='https://picsum.photos/600/300?random=${server.id}'">
+                    <div class="server-status">
+                        <div class="status-dot"></div>
+                        <div class="status-text">DESTAQUE</div>
                     </div>
-                    <p class="server-description">${server.description}</p>
                 </div>
-            </div>
 
-            <div class="server-stats">
-                <div class="server-stat">
-                    <div class="value">${server.players}/${server.maxPlayers}</div>
-                    <div class="label">Jogadores</div>
-                </div>
-                <div class="server-stat">
-                    <div class="value">${server.version}</div>
-                    <div class="label">Versão</div>
-                </div>
-                <div class="server-stat">
-                    <div class="value">${server.votes}</div>
-                    <div class="label">Votos</div>
-                </div>
-            </div>
+                <div class="server-content">
+                    <div class="server-header">
+                        <div class="server-icon" style="background: linear-gradient(135deg, #ffb74d, #ff6b6b);">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="server-info">
+                            <div class="server-title">
+                                ${server.name}
+                                <span class="server-category">${categoryName}</span>
+                            </div>
+                            <p class="server-description">${server.description}</p>
+                        </div>
+                    </div>
 
-            <div class="server-actions">
-                <button class="btn-join" onclick="event.stopPropagation(); window.openFormModal('${server.id}')">
-                    <i class="fas fa-gamepad"></i>
-                    ENTRAR AGORA
-                </button>
+                    <div class="server-stats">
+                        <div class="server-stat">
+                            <div class="value">${server.players}/${server.maxPlayers}</div>
+                            <div class="label">Jogadores</div>
+                        </div>
+                        <div class="server-stat">
+                            <div class="value">${server.version}</div>
+                            <div class="label">Versão</div>
+                        </div>
+                        <div class="server-stat">
+                            <div class="value">${server.votes}</div>
+                            <div class="label">Votos</div>
+                        </div>
+                    </div>
+
+                    <div class="server-actions">
+                        <button class="btn-join" onclick="event.stopPropagation(); window.openFormModal('${server.id}')">
+                            <i class="fas fa-gamepad"></i>
+                            ENTRAR AGORA
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    `;
+            `;
         }).join('');
     }
 
@@ -789,99 +817,99 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (modalBody && modalTitle) {
             modalBody.innerHTML = `
-    <div class="server-details">
-        <div class="detail-banner">
-            <img src="${server.banner}" alt="${server.name}"
-                onerror="this.src='https://picsum.photos/800/400?random=${server.id}'">
-        </div>
-
-        <div class="detail-info">
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-server"></i>
-                    Nome do Servidor
+            <div class="server-details">
+                <div class="detail-banner">
+                    <img src="${server.banner}" alt="${server.name}"
+                        onerror="this.src='https://picsum.photos/800/400?random=${server.id}'">
                 </div>
-                <div class="detail-value">${server.name}</div>
+
+                <div class="detail-info">
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-server"></i>
+                            Nome do Servidor
+                        </div>
+                        <div class="detail-value">${server.name}</div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-tag"></i>
+                            Categoria
+                        </div>
+                        <div class="detail-value">${categoryName}</div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-network-wired"></i>
+                            Endereço IP
+                        </div>
+                        <div class="detail-value">${server.ip}:${server.port}</div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-users"></i>
+                            Jogadores Online
+                        </div>
+                        <div class="detail-value">${server.players}/${server.maxPlayers}</div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-code-branch"></i>
+                            Versão
+                        </div>
+                        <div class="detail-value">${server.version}</div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-user"></i>
+                            Proprietário
+                        </div>
+                        <div class="detail-owner">
+                            <img src="${server.ownerAvatar}" alt="${server.ownerName}" class="owner-avatar">
+                            <span class="owner-name">${server.ownerName}</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-row">
+                        <div class="detail-label">
+                            <i class="fas fa-signal"></i>
+                            Status
+                        </div>
+                        <div class="detail-value">
+                            <span style="color: ${server.online ? '#00ff88' : '#ff6b6b'}">
+                                ${server.online ? '🟢 ONLINE' : '🔴 OFFLINE'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-description">
+                    <h4><i class="fas fa-align-left"></i> Descrição</h4>
+                    <p>${server.description}</p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-copy" onclick="window.copyIP('${server.ip}:${server.port}')">
+                        <i class="fas fa-copy"></i>
+                        Copiar IP
+                    </button>
+                    <button class="btn-connect" onclick="window.openFormModal('${server.id}')">
+                        <i class="fas fa-gamepad"></i>
+                        Conectar
+                    </button>
+                </div>
             </div>
-
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-tag"></i>
-                    Categoria
-                </div>
-                <div class="detail-value">${categoryName}</div>
-            </div>
-
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-network-wired"></i>
-                    Endereço IP
-                </div>
-                <div class="detail-value">${server.ip}:${server.port}</div>
-            </div>
-
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-users"></i>
-                    Jogadores Online
-                </div>
-                <div class="detail-value">${server.players}/${server.maxPlayers}</div>
-            </div>
-
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-code-branch"></i>
-                    Versão
-                </div>
-                <div class="detail-value">${server.version}</div>
-            </div>
-
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-user"></i>
-                    Proprietário
-                </div>
-                <div class="detail-owner">
-                    <img src="${server.ownerAvatar}" alt="${server.ownerName}" class="owner-avatar">
-                    <span class="owner-name">${server.ownerName}</span>
-                </div>
-            </div>
-
-            <div class="detail-row">
-                <div class="detail-label">
-                    <i class="fas fa-signal"></i>
-                    Status
-                </div>
-                <div class="detail-value">
-                    <span style="color: ${server.online ? '#00ff88' : '#ff6b6b'}">
-                        ${server.online ? '🟢 ONLINE' : '🔴 OFFLINE'}
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <div class="detail-description">
-            <h4><i class="fas fa-align-left"></i> Descrição</h4>
-            <p>${server.description}</p>
-        </div>
-
-        <div class="form-actions">
-            <button class="btn-copy" onclick="window.copyIP('${server.ip}:${server.port}')">
-                <i class="fas fa-copy"></i>
-                Copiar IP
-            </button>
-            <button class="btn-connect" onclick="window.openFormModal('${server.id}')">
-                <i class="fas fa-gamepad"></i>
-                Conectar
-            </button>
-        </div>
-    </div>
-    `;
+            `;
 
             modalTitle.innerHTML = `
-    <i class="fas fa-server"></i>
-    ${server.name}
-    `;
+            <i class="fas fa-server"></i>
+            ${server.name}
+            `;
         }
 
         modal.classList.add('active');
@@ -930,86 +958,117 @@ document.addEventListener('DOMContentLoaded', function () {
     function generateConnectionCode(server) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
-        for (let i = 0; i < 8; i++) { code += chars.charAt(Math.floor(Math.random() * chars.length)); } return
-        `${server.id.substring(0, 3).toUpperCase()}-${code}`;
-    } //=====ACTION FUNCTIONS=====window.copyIP=function(ip) {
-    navigator.clipboard.writeText(ip).then(() => {
-        showNotification('IP copiado para a área de transferência!');
-    }).catch(err => {
-        console.error('Erro ao copiar IP:', err);
-        showNotification('Erro ao copiar IP');
-    });
-};
-
-window.copyConnectionDetails = function () {
-    const ip = document.getElementById('serverIp');
-    const port = document.getElementById('serverPort');
-    const code = document.getElementById('connectionCode');
-
-    if (!ip || !port) return;
-
-    let details = `IP: ${ip.value}:${port.value}`;
-    if (selectedForm !== 1 && code && code.value) {
-        details += `\nCódigo: ${code.value}`;
-    }
-
-    navigator.clipboard.writeText(details).then(() => {
-        showNotification('Detalhes copiados!');
-    });
-};
-
-window.connectToServer = function () {
-    if (!selectedServer) return;
-
-    const ip = selectedServer.ip;
-    const port = selectedServer.port;
-
-    // Minecraft deep link
-    const minecraftUrl = `minecraft://?addExternalServer=MineHost|${ip}:${port}`;
-    window.location.href = minecraftUrl;
-
-    // Fallback
-    setTimeout(() => {
-        if (document.hasFocus()) {
-            window.copyIP(`${ip}:${port}`);
-            showNotification('IP copiado! Cole no Minecraft manualmente.');
+        for (let i = 0; i < 8; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
         }
-    }, 1000);
-
-    window.closeFormModal();
-};
-
-window.toggleFavorite = function (serverId, button) {
-    if (!currentUser) {
-        showNotification('Faça login para favoritar servidores!');
-        signInWithGoogle();
-        return;
+        return `${server.id.substring(0, 3).toUpperCase()}-${code}`;
     }
 
-    button.classList.toggle('favorited');
-    showNotification(button.classList.contains('favorited')
-        ? 'Servidor favoritado!'
-        : 'Removido dos favoritos');
-};
+    // ===== ACTION FUNCTIONS =====
+    window.copyIP = function(ip) {
+        navigator.clipboard.writeText(ip).then(() => {
+            showNotification('IP copiado para a área de transferência!');
+        }).catch(err => {
+            console.error('Erro ao copiar IP:', err);
+            showNotification('Erro ao copiar IP');
+        });
+    };
 
-// ===== NOTIFICATION =====
-window.showNotification = function (message) {
-    const notification = document.getElementById('notification');
-    const notificationText = document.getElementById('notificationText');
+    window.copyConnectionDetails = function() {
+        const ip = document.getElementById('serverIp');
+        const port = document.getElementById('serverPort');
+        const code = document.getElementById('connectionCode');
 
-    if (!notification || !notificationText) return;
+        if (!ip || !port) return;
 
-    notificationText.textContent = message;
-    notification.classList.add('show');
+        let details = `IP: ${ip.value}:${port.value}`;
+        if (selectedForm !== 1 && code && code.value) {
+            details += `\nCódigo: ${code.value}`;
+        }
 
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-};
+        navigator.clipboard.writeText(details).then(() => {
+            showNotification('Detalhes copiados!');
+        });
+    };
 
-// ===== INITIALIZE =====
-init();
+    window.connectToServer = function() {
+        if (!selectedServer) return;
 
-// Expor funções globalmente
-window.resetFilters = resetFilters;
- });
+        const ip = selectedServer.ip;
+        const port = selectedServer.port;
+
+        // Minecraft deep link
+        const minecraftUrl = `minecraft://?addExternalServer=MineHost|${ip}:${port}`;
+        window.location.href = minecraftUrl;
+
+        // Fallback
+        setTimeout(() => {
+            if (document.hasFocus()) {
+                window.copyIP(`${ip}:${port}`);
+                showNotification('IP copiado! Cole no Minecraft manualmente.');
+            }
+        }, 1000);
+
+        window.closeFormModal();
+    };
+
+    window.toggleFavorite = async function(serverId, button) {
+        if (!currentUser) {
+            showNotification('Faça login para favoritar servidores!');
+            signInWithGoogle();
+            return;
+        }
+
+        try {
+            const favoritesRef = window.firebase.collection(window.firebase.db, 'favorites');
+            const favoriteQuery = window.firebase.query(
+                favoritesRef,
+                window.firebase.where('userId', '==', currentUser.uid),
+                window.firebase.where('serverId', '==', serverId)
+            );
+
+            const favoriteSnapshot = await window.firebase.getDocs(favoriteQuery);
+            
+            if (!favoriteSnapshot.empty) {
+                // Remover dos favoritos
+                const docId = favoriteSnapshot.docs[0].id;
+                await window.firebase.deleteDoc(window.firebase.doc(window.firebase.db, 'favorites', docId));
+                button.classList.remove('favorited');
+                showNotification('Removido dos favoritos');
+            } else {
+                // Adicionar aos favoritos
+                await window.firebase.addDoc(favoritesRef, {
+                    userId: currentUser.uid,
+                    serverId: serverId,
+                    createdAt: window.firebase.serverTimestamp()
+                });
+                button.classList.add('favorited');
+                showNotification('Servidor favoritado!');
+            }
+        } catch (error) {
+            console.error('Erro ao favoritar:', error);
+            showNotification('Erro ao favoritar servidor');
+        }
+    };
+
+    // ===== NOTIFICATION =====
+    window.showNotification = function(message) {
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notificationText');
+
+        if (!notification || !notificationText) return;
+
+        notificationText.textContent = message;
+        notification.classList.add('show');
+
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    };
+
+    // ===== INITIALIZE =====
+    init();
+
+    // Expor funções globalmente
+    window.resetFilters = resetFilters;
+});
