@@ -80,17 +80,21 @@
                 const formData = new FormData();
                 formData.append('file', file);
                 
-                // Usando o endpoint S3 do Supabase
-                const response = await fetch(`${window.supabaseConfig.s3Endpoint}/${window.supabaseConfig.bucketName}/${path}`, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'Authorization': `Bearer ${window.supabaseConfig.projectId}`
+                // Para o Supabase, precisamos usar o endpoint REST
+                const response = await fetch(
+                    `https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/${window.supabaseConfig.bucketName}/${path}`, 
+                    {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Authorization': `Bearer ${window.supabaseConfig.projectId}`,
+                            'apikey': window.supabaseConfig.projectId
+                        }
                     }
-                });
+                );
                 
                 if (!response.ok) {
-                    throw new Error('Falha no upload');
+                    throw new Error('Falha no upload: ' + response.statusText);
                 }
                 
                 return `${window.supabaseConfig.baseUrl}/${window.supabaseConfig.bucketName}/${path}`;
@@ -103,18 +107,28 @@
         // Função para deletar do Supabase
         window.deleteFromSupabase = async function(path) {
             try {
-                const response = await fetch(`${window.supabaseConfig.s3Endpoint}/${window.supabaseConfig.bucketName}/${path}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${window.supabaseConfig.projectId}`
+                const response = await fetch(
+                    `https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/${window.supabaseConfig.bucketName}/${path}`,
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${window.supabaseConfig.projectId}`,
+                            'apikey': window.supabaseConfig.projectId
+                        }
                     }
-                });
+                );
                 
                 return response.ok;
             } catch (error) {
                 console.error('Erro ao deletar:', error);
                 return false;
             }
+        };
+        
+        // Função para obter URL do Supabase
+        window.getSupabaseUrl = function(path) {
+            if (!path) return '';
+            return `${window.supabaseConfig.baseUrl}/${window.supabaseConfig.bucketName}/${path}`;
         };
     </script>
     
@@ -125,6 +139,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* RESET E VARIÁVEIS */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         :root {
             --primary: #1a5276;
             --primary-light: #2e86c1;
@@ -132,7 +153,6 @@
             --secondary: #28b463;
             --secondary-light: #58d68d;
             --accent: #f39c12;
-            --accent-glow: #f1c40f;
             --dark: #0c1a25;
             --darker: #050a0f;
             --light: #e8f4f8;
@@ -141,16 +161,9 @@
             --minecraft-red: #FF5555;
             --minecraft-blue: #5555FF;
             --minecraft-purple: #AA00AA;
-            
             --border-radius: 12px;
             --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
         }
         
         body {
@@ -159,9 +172,14 @@
             color: var(--light);
             min-height: 100vh;
             line-height: 1.6;
-            overflow-x: hidden;
         }
         
+        /* UTILIDADES */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* CONTAINER */
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -169,7 +187,7 @@
         }
         
         /* HEADER */
-        header {
+        .profile-header {
             background: rgba(5, 10, 15, 0.95);
             backdrop-filter: blur(20px);
             border-bottom: 2px solid rgba(46, 134, 193, 0.3);
@@ -185,14 +203,14 @@
             align-items: center;
         }
         
-        .logo {
+        .profile-logo {
             display: flex;
             align-items: center;
             gap: 15px;
             text-decoration: none;
         }
         
-        .logo-icon {
+        .profile-logo-icon {
             width: 50px;
             height: 50px;
             background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
@@ -204,18 +222,18 @@
             transform: rotate(45deg);
         }
         
-        .logo-icon i {
+        .profile-logo-icon i {
             color: white;
             font-size: 1.2rem;
             transform: rotate(-45deg);
         }
         
-        .logo-text {
+        .profile-logo-text {
             display: flex;
             flex-direction: column;
         }
         
-        .logo-main {
+        .profile-logo-main {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.8rem;
             font-weight: 900;
@@ -227,7 +245,7 @@
             line-height: 1;
         }
         
-        .logo-sub {
+        .profile-logo-sub {
             font-size: 0.8rem;
             color: var(--secondary);
             letter-spacing: 2px;
@@ -236,12 +254,12 @@
             font-weight: 600;
         }
         
-        .nav-links {
+        .profile-nav-links {
             display: flex;
             gap: 25px;
         }
         
-        .nav-link {
+        .profile-nav-link {
             color: var(--light);
             text-decoration: none;
             font-size: 1.1rem;
@@ -252,7 +270,7 @@
             transition: var(--transition);
         }
         
-        .nav-link::before {
+        .profile-nav-link::before {
             content: '';
             position: absolute;
             bottom: 0;
@@ -263,15 +281,15 @@
             transition: var(--transition);
         }
         
-        .nav-link:hover {
+        .profile-nav-link:hover {
             color: var(--secondary-light);
         }
         
-        .nav-link:hover::before {
+        .profile-nav-link:hover::before {
             width: 100%;
         }
         
-        /* MAIN CONTENT */
+        /* CONTEÚDO PRINCIPAL */
         .profile-container {
             padding: 60px 0;
             min-height: calc(100vh - 200px);
@@ -295,12 +313,12 @@
             top: 100px;
         }
         
-        .profile-header {
+        .profile-info {
             text-align: center;
             margin-bottom: 30px;
         }
         
-        .profile-avatar {
+        .profile-avatar-container {
             width: 150px;
             height: 150px;
             border-radius: 50%;
@@ -312,18 +330,18 @@
             transition: var(--transition);
         }
         
-        .profile-avatar:hover {
+        .profile-avatar-container:hover {
             transform: scale(1.05);
             box-shadow: 0 0 30px rgba(85, 255, 85, 0.3);
         }
         
-        .profile-avatar img {
+        #profileAvatarImg {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
         
-        .avatar-upload {
+        .avatar-upload-overlay {
             position: absolute;
             bottom: 0;
             left: 0;
@@ -334,11 +352,11 @@
             transition: var(--transition);
         }
         
-        .profile-avatar:hover .avatar-upload {
+        .profile-avatar-container:hover .avatar-upload-overlay {
             transform: translateY(0);
         }
         
-        .profile-name {
+        .profile-display-name {
             font-family: 'Orbitron', sans-serif;
             font-size: 2.2rem;
             color: var(--light);
@@ -361,7 +379,7 @@
             border: 1px solid rgba(85, 255, 85, 0.1);
         }
         
-        .profile-stat {
+        .profile-stat-item {
             text-align: center;
         }
         
@@ -386,7 +404,7 @@
             gap: 15px;
         }
         
-        .profile-btn {
+        .profile-action-btn {
             padding: 15px;
             border: none;
             border-radius: 12px;
@@ -401,39 +419,39 @@
             gap: 12px;
         }
         
-        .profile-btn.primary {
+        .profile-action-btn.primary {
             background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
             color: white;
         }
         
-        .profile-btn.primary:hover {
+        .profile-action-btn.primary:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(85, 255, 85, 0.3);
         }
         
-        .profile-btn.secondary {
+        .profile-action-btn.secondary {
             background: rgba(255, 255, 255, 0.05);
             color: var(--light);
             border: 2px solid rgba(255, 255, 255, 0.1);
         }
         
-        .profile-btn.secondary:hover {
+        .profile-action-btn.secondary:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: var(--minecraft-green);
         }
         
-        .profile-btn.danger {
+        .profile-action-btn.danger {
             background: linear-gradient(135deg, #FF5555, #c0392b);
             color: white;
         }
         
-        .profile-btn.danger:hover {
+        .profile-action-btn.danger:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(255, 85, 85, 0.3);
         }
         
         /* SERVIDORES DO USUÁRIO */
-        .servers-section {
+        .my-servers-section {
             background: rgba(5, 10, 15, 0.8);
             border-radius: 20px;
             padding: 30px;
@@ -478,13 +496,13 @@
             box-shadow: 0 10px 20px rgba(243, 156, 18, 0.4);
         }
         
-        .servers-grid {
+        .my-servers-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 25px;
         }
         
-        .server-card {
+        .my-server-card {
             background: linear-gradient(135deg, rgba(26, 82, 118, 0.2), rgba(5, 10, 15, 0.9));
             border-radius: 15px;
             overflow: hidden;
@@ -492,13 +510,13 @@
             transition: var(--transition);
         }
         
-        .server-card:hover {
+        .my-server-card:hover {
             transform: translateY(-5px);
             border-color: var(--minecraft-green);
             box-shadow: var(--box-shadow), 0 0 30px rgba(85, 255, 85, 0.1);
         }
         
-        .server-banner {
+        .my-server-banner {
             width: 100%;
             height: 120px;
             overflow: hidden;
@@ -506,13 +524,13 @@
             background: linear-gradient(135deg, var(--primary-dark), var(--darker));
         }
         
-        .server-banner img {
+        .my-server-banner img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
         
-        .server-status {
+        .my-server-status {
             position: absolute;
             top: 10px;
             left: 10px;
@@ -525,35 +543,35 @@
             backdrop-filter: blur(10px);
         }
         
-        .status-dot {
+        .my-status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
             background: var(--secondary);
         }
         
-        .status-dot.offline {
+        .my-status-dot.offline {
             background: var(--minecraft-red);
         }
         
-        .status-text {
+        .my-status-text {
             font-size: 0.8rem;
             font-weight: 600;
             color: white;
         }
         
-        .server-content {
+        .my-server-content {
             padding: 20px;
         }
         
-        .server-header {
+        .my-server-header {
             display: flex;
             align-items: center;
             gap: 12px;
             margin-bottom: 15px;
         }
         
-        .server-icon {
+        .my-server-icon {
             width: 50px;
             height: 50px;
             background: linear-gradient(135deg, var(--minecraft-green), var(--minecraft-blue));
@@ -566,12 +584,12 @@
             flex-shrink: 0;
         }
         
-        .server-info {
+        .my-server-info {
             flex: 1;
             min-width: 0;
         }
         
-        .server-title {
+        .my-server-title {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.3rem;
             color: var(--light);
@@ -581,7 +599,7 @@
             text-overflow: ellipsis;
         }
         
-        .server-category {
+        .my-server-category {
             display: inline-block;
             padding: 3px 10px;
             background: rgba(85, 255, 85, 0.15);
@@ -592,7 +610,7 @@
             letter-spacing: 1px;
         }
         
-        .server-stats {
+        .my-server-stats {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
@@ -602,11 +620,11 @@
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .server-stat {
+        .my-server-stat {
             text-align: center;
         }
         
-        .server-stat-value {
+        .my-server-stat-value {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.2rem;
             font-weight: 700;
@@ -614,7 +632,7 @@
             line-height: 1;
         }
         
-        .server-stat-label {
+        .my-server-stat-label {
             font-size: 0.75rem;
             color: var(--gray);
             margin-top: 3px;
@@ -622,7 +640,7 @@
             letter-spacing: 0.5px;
         }
         
-        .server-ip {
+        .my-server-ip {
             background: rgba(5, 10, 15, 0.8);
             border-radius: 8px;
             padding: 12px;
@@ -630,7 +648,7 @@
             border: 1px solid rgba(85, 255, 85, 0.2);
         }
         
-        .ip-text {
+        .my-ip-text {
             font-family: 'Orbitron', monospace;
             font-size: 1rem;
             color: var(--light);
@@ -639,12 +657,12 @@
             display: block;
         }
         
-        .server-actions {
+        .my-server-actions {
             display: flex;
             gap: 10px;
         }
         
-        .action-btn {
+        .my-action-btn {
             flex: 1;
             padding: 10px;
             border: none;
@@ -660,46 +678,46 @@
             gap: 8px;
         }
         
-        .action-btn.edit {
+        .my-action-btn.edit {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
         }
         
-        .action-btn.edit:hover {
+        .my-action-btn.edit:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
         }
         
-        .action-btn.delete {
+        .my-action-btn.delete {
             background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: white;
         }
         
-        .action-btn.delete:hover {
+        .my-action-btn.delete:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
         }
         
-        .no-servers {
+        .no-servers-message {
             text-align: center;
             padding: 60px 40px;
             grid-column: 1 / -1;
         }
         
-        .no-servers i {
+        .no-servers-message i {
             font-size: 4rem;
             color: var(--gray);
             margin-bottom: 20px;
             opacity: 0.5;
         }
         
-        .no-servers h3 {
+        .no-servers-message h3 {
             font-size: 1.8rem;
             color: var(--light);
             margin-bottom: 15px;
         }
         
-        .no-servers p {
+        .no-servers-message p {
             color: var(--gray);
             margin-bottom: 30px;
             font-size: 1.1rem;
@@ -709,7 +727,7 @@
         }
         
         /* MODAIS */
-        .modal {
+        .profile-modal {
             display: none;
             position: fixed;
             top: 0;
@@ -722,11 +740,11 @@
             justify-content: center;
         }
         
-        .modal.active {
+        .profile-modal.active {
             display: flex;
         }
         
-        .modal-content {
+        .profile-modal-content {
             background: linear-gradient(135deg, var(--darker), var(--dark));
             border-radius: 20px;
             padding: 40px;
@@ -737,7 +755,7 @@
             position: relative;
         }
         
-        .modal-close {
+        .profile-modal-close {
             position: absolute;
             top: 20px;
             right: 20px;
@@ -755,13 +773,13 @@
             justify-content: center;
         }
         
-        .modal-close:hover {
+        .profile-modal-close:hover {
             background: rgba(255, 255, 255, 0.1);
             color: var(--accent);
             transform: rotate(90deg);
         }
         
-        .modal-title {
+        .profile-modal-title {
             font-family: 'Orbitron', sans-serif;
             font-size: 2rem;
             color: var(--minecraft-green);
@@ -769,18 +787,18 @@
             text-align: center;
         }
         
-        .form-group {
+        .profile-form-group {
             margin-bottom: 20px;
         }
         
-        .form-label {
+        .profile-form-label {
             display: block;
             color: var(--light);
             margin-bottom: 8px;
             font-weight: 600;
         }
         
-        .form-input, .form-select, .form-textarea {
+        .profile-form-input, .profile-form-select, .profile-form-textarea {
             width: 100%;
             padding: 14px;
             background: rgba(255, 255, 255, 0.05);
@@ -792,18 +810,18 @@
             transition: var(--transition);
         }
         
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
+        .profile-form-input:focus, .profile-form-select:focus, .profile-form-textarea:focus {
             outline: none;
             border-color: var(--minecraft-green);
             box-shadow: 0 0 20px rgba(85, 255, 85, 0.3);
         }
         
-        .form-textarea {
+        .profile-form-textarea {
             min-height: 100px;
             resize: vertical;
         }
         
-        .form-upload {
+        .profile-form-upload {
             border: 2px dashed rgba(46, 134, 193, 0.3);
             padding: 30px;
             text-align: center;
@@ -812,32 +830,32 @@
             transition: var(--transition);
         }
         
-        .form-upload:hover {
+        .profile-form-upload:hover {
             border-color: var(--minecraft-green);
             background: rgba(85, 255, 85, 0.05);
         }
         
-        .form-upload i {
+        .profile-form-upload i {
             font-size: 3rem;
             color: var(--minecraft-green);
             margin-bottom: 15px;
         }
         
-        .form-upload-text {
+        .profile-form-upload-text {
             color: var(--light);
             margin-bottom: 5px;
         }
         
-        .form-upload-subtext {
+        .profile-form-upload-subtext {
             color: var(--gray);
             font-size: 0.9rem;
         }
         
-        .hidden-input {
+        .profile-hidden-input {
             display: none;
         }
         
-        .preview-image {
+        .profile-preview-image {
             max-width: 100%;
             max-height: 200px;
             border-radius: 10px;
@@ -845,33 +863,33 @@
             display: none;
         }
         
-        .preview-image.active {
+        .profile-preview-image.active {
             display: block;
         }
         
-        .form-checkbox {
+        .profile-form-checkbox {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
         }
         
-        .form-checkbox input {
+        .profile-form-checkbox input {
             width: 20px;
             height: 20px;
         }
         
-        .form-checkbox label {
+        .profile-form-checkbox label {
             color: var(--light);
         }
         
-        .modal-actions {
+        .profile-modal-actions {
             display: flex;
             gap: 15px;
             margin-top: 30px;
         }
         
-        .modal-btn {
+        .profile-modal-btn {
             flex: 1;
             padding: 15px;
             border: none;
@@ -883,70 +901,70 @@
             transition: var(--transition);
         }
         
-        .modal-btn.primary {
+        .profile-modal-btn.primary {
             background: linear-gradient(135deg, var(--minecraft-green), var(--secondary));
             color: white;
         }
         
-        .modal-btn.primary:hover {
+        .profile-modal-btn.primary:hover {
             transform: translateY(-3px);
             box-shadow: 0 10px 20px rgba(85, 255, 85, 0.3);
         }
         
-        .modal-btn.secondary {
+        .profile-modal-btn.secondary {
             background: rgba(255, 255, 255, 0.05);
             color: var(--light);
             border: 2px solid rgba(255, 255, 255, 0.1);
         }
         
-        .modal-btn.secondary:hover {
+        .profile-modal-btn.secondary:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: var(--minecraft-green);
         }
         
-        .loading {
+        .profile-loading {
             display: none;
             text-align: center;
             margin: 20px 0;
         }
         
-        .loading.active {
+        .profile-loading.active {
             display: block;
         }
         
-        .loading-spinner {
+        .profile-loading-spinner {
             width: 40px;
             height: 40px;
             border: 4px solid rgba(255, 255, 255, 0.1);
             border-top: 4px solid var(--minecraft-green);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: profile-spin 1s linear infinite;
             margin: 0 auto 10px;
         }
         
-        @keyframes spin {
+        @keyframes profile-spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
         
         /* FOOTER */
-        footer {
+        .profile-footer {
             padding: 40px 0;
             background: rgba(5, 10, 15, 0.95);
             border-top: 2px solid rgba(85, 255, 85, 0.2);
         }
         
-        .footer-content {
+        .profile-footer-content {
             text-align: center;
         }
         
-        .copyright {
+        .profile-copyright {
             color: var(--gray);
             font-size: 0.9rem;
         }
         
         /* NOTIFICAÇÃO */
-        .notification {
+        .profile-notification {
             position: fixed;
             top: 100px;
             right: 20px;
@@ -957,7 +975,7 @@
             border-left: 5px solid var(--minecraft-green);
             box-shadow: 0 15px 35px rgba(0,0,0,0.4);
             z-index: 10000;
-            animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: profile-slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             max-width: 350px;
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
@@ -968,7 +986,7 @@
             border: 2px solid rgba(85, 255, 85, 0.2);
         }
         
-        @keyframes slideIn {
+        @keyframes profile-slideIn {
             from {
                 transform: translateX(100%) translateY(-20px);
                 opacity: 0;
@@ -979,7 +997,7 @@
             }
         }
         
-        @keyframes slideOut {
+        @keyframes profile-slideOut {
             from {
                 transform: translateX(0) translateY(0);
                 opacity: 1;
@@ -1000,17 +1018,17 @@
                 position: static;
             }
             
-            .nav-links {
+            .profile-nav-links {
                 display: none;
             }
         }
         
         @media (max-width: 768px) {
-            .servers-grid {
+            .my-servers-grid {
                 grid-template-columns: 1fr;
             }
             
-            .modal-content {
+            .profile-modal-content {
                 padding: 30px 20px;
             }
         }
@@ -1020,7 +1038,7 @@
                 grid-template-columns: 1fr;
             }
             
-            .modal-actions {
+            .profile-modal-actions {
                 flex-direction: column;
             }
         }
@@ -1028,24 +1046,24 @@
 </head>
 <body>
     <!-- Header -->
-    <header>
+    <header class="profile-header">
         <div class="container">
             <div class="header-content">
-                <a href="index.html" class="logo">
-                    <div class="logo-icon">
+                <a href="index.html" class="profile-logo">
+                    <div class="profile-logo-icon">
                         <i class="fas fa-server"></i>
                     </div>
-                    <div class="logo-text">
-                        <div class="logo-main">MineHost</div>
-                        <div class="logo-sub">Meu Perfil</div>
+                    <div class="profile-logo-text">
+                        <div class="profile-logo-main">MineHost</div>
+                        <div class="profile-logo-sub">Meu Perfil</div>
                     </div>
                 </a>
                 
-                <nav class="nav-links">
-                    <a href="index.html" class="nav-link">Início</a>
-                    <a href="index.html#servers" class="nav-link">Servidores</a>
-                    <a href="criar.html" class="nav-link">Criar Servidor</a>
-                    <a href="profile.html" class="nav-link">Meu Perfil</a>
+                <nav class="profile-nav-links">
+                    <a href="index.html" class="profile-nav-link">Início</a>
+                    <a href="index.html#servers" class="profile-nav-link">Servidores</a>
+                    <a href="criar.html" class="profile-nav-link">Criar Servidor</a>
+                    <a href="profile.html" class="profile-nav-link">Meu Perfil</a>
                 </nav>
             </div>
         </div>
@@ -1057,50 +1075,50 @@
             <div class="profile-content">
                 <!-- Sidebar do Perfil -->
                 <div class="profile-sidebar">
-                    <div class="profile-header">
-                        <div class="profile-avatar" id="avatarContainer">
-                            <img id="profileAvatar" src="" alt="Avatar">
-                            <div class="avatar-upload">
-                                <input type="file" id="avatarInput" accept="image/*,.gif" class="hidden-input">
-                                <button class="profile-btn secondary" onclick="document.getElementById('avatarInput').click()">
+                    <div class="profile-info">
+                        <div class="profile-avatar-container" id="avatarContainer">
+                            <img id="profileAvatarImg" src="" alt="Avatar">
+                            <div class="avatar-upload-overlay">
+                                <input type="file" id="avatarInput" accept="image/*,.gif" class="profile-hidden-input">
+                                <button class="profile-action-btn secondary" onclick="document.getElementById('avatarInput').click()">
                                     <i class="fas fa-camera"></i>
                                     Alterar Foto
                                 </button>
                             </div>
                         </div>
-                        <h1 class="profile-name" id="profileName">Carregando...</h1>
+                        <h1 class="profile-display-name" id="profileDisplayName">Carregando...</h1>
                         <p class="profile-email" id="profileEmail">carregando@email.com</p>
                     </div>
                     
                     <div class="profile-stats">
-                        <div class="profile-stat">
+                        <div class="profile-stat-item">
                             <div class="profile-stat-value" id="statsServers">0</div>
                             <div class="profile-stat-label">Servidores</div>
                         </div>
-                        <div class="profile-stat">
+                        <div class="profile-stat-item">
                             <div class="profile-stat-value" id="statsFavorites">0</div>
                             <div class="profile-stat-label">Favoritos</div>
                         </div>
-                        <div class="profile-stat">
+                        <div class="profile-stat-item">
                             <div class="profile-stat-value" id="statsPlayers">0</div>
                             <div class="profile-stat-label">Jogadores</div>
                         </div>
-                        <div class="profile-stat">
+                        <div class="profile-stat-item">
                             <div class="profile-stat-value" id="statsViews">0</div>
                             <div class="profile-stat-label">Visualizações</div>
                         </div>
                     </div>
                     
                     <div class="profile-actions">
-                        <button class="profile-btn primary" onclick="window.location.href='criar.html'">
+                        <button class="profile-action-btn primary" onclick="window.location.href='criar.html'">
                             <i class="fas fa-plus"></i>
                             CRIAR NOVO SERVIDOR
                         </button>
-                        <button class="profile-btn secondary" onclick="openEditProfileModal()">
+                        <button class="profile-action-btn secondary" onclick="openEditProfileModal()">
                             <i class="fas fa-edit"></i>
                             EDITAR PERFIL
                         </button>
-                        <button class="profile-btn danger" id="logoutBtn">
+                        <button class="profile-action-btn danger" id="logoutBtn">
                             <i class="fas fa-sign-out-alt"></i>
                             SAIR DA CONTA
                         </button>
@@ -1108,7 +1126,7 @@
                 </div>
                 
                 <!-- Servidores do Usuário -->
-                <div class="servers-section">
+                <div class="my-servers-section">
                     <div class="section-header">
                         <h2 class="section-title">
                             <i class="fas fa-server"></i>
@@ -1120,15 +1138,15 @@
                         </button>
                     </div>
                     
-                    <div class="servers-grid" id="userServersGrid">
+                    <div class="my-servers-grid" id="userServersGrid">
                         <!-- Servidores serão carregados aqui -->
-                        <div class="loading" id="loadingServers">
-                            <div class="loading-spinner"></div>
+                        <div class="profile-loading" id="loadingServers">
+                            <div class="profile-loading-spinner"></div>
                             <p>Carregando servidores...</p>
                         </div>
                     </div>
                     
-                    <div class="no-servers hidden" id="noServers">
+                    <div class="no-servers-message hidden" id="noServers">
                         <i class="fas fa-server"></i>
                         <h3>Você ainda não tem servidores</h3>
                         <p>Crie seu primeiro servidor e compartilhe com a comunidade!</p>
@@ -1143,10 +1161,10 @@
     </main>
     
     <!-- Footer -->
-    <footer>
+    <footer class="profile-footer">
         <div class="container">
-            <div class="footer-content">
-                <p class="copyright">
+            <div class="profile-footer-content">
+                <p class="profile-copyright">
                     &copy; 2023 MineHost. Todos os direitos reservados.<br>
                     Minecraft é uma marca registrada da Mojang Studios.
                 </p>
@@ -1155,39 +1173,39 @@
     </footer>
     
     <!-- Modal Editar Perfil -->
-    <div class="modal" id="editProfileModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeEditProfileModal()">
+    <div class="profile-modal" id="editProfileModal">
+        <div class="profile-modal-content">
+            <button class="profile-modal-close" onclick="closeEditProfileModal()">
                 <i class="fas fa-times"></i>
             </button>
-            <h2 class="modal-title">EDITAR PERFIL</h2>
+            <h2 class="profile-modal-title">EDITAR PERFIL</h2>
             
-            <div class="form-group">
-                <label class="form-label">Nome de Exibição</label>
-                <input type="text" class="form-input" id="editDisplayName" placeholder="Seu nome no MineHost">
+            <div class="profile-form-group">
+                <label class="profile-form-label">Nome de Exibição</label>
+                <input type="text" class="profile-form-input" id="editDisplayName" placeholder="Seu nome no MineHost">
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Foto de Perfil</label>
-                <div class="form-upload" onclick="document.getElementById('editAvatarInput').click()">
+            <div class="profile-form-group">
+                <label class="profile-form-label">Foto de Perfil</label>
+                <div class="profile-form-upload" onclick="document.getElementById('editAvatarInput').click()">
                     <i class="fas fa-cloud-upload-alt"></i>
-                    <p class="form-upload-text">Clique para fazer upload</p>
-                    <p class="form-upload-subtext">PNG, JPG ou GIF (máx. 5MB)</p>
-                    <input type="file" id="editAvatarInput" accept="image/*,.gif" class="hidden-input">
+                    <p class="profile-form-upload-text">Clique para fazer upload</p>
+                    <p class="profile-form-upload-subtext">PNG, JPG ou GIF (máx. 5MB)</p>
+                    <input type="file" id="editAvatarInput" accept="image/*,.gif" class="profile-hidden-input">
                 </div>
-                <img id="avatarPreview" class="preview-image" src="" alt="Preview">
+                <img id="avatarPreview" class="profile-preview-image" src="" alt="Preview">
             </div>
             
-            <div class="loading" id="loadingEdit">
-                <div class="loading-spinner"></div>
+            <div class="profile-loading" id="loadingEdit">
+                <div class="profile-loading-spinner"></div>
                 <p>Salvando alterações...</p>
             </div>
             
-            <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeEditProfileModal()">
+            <div class="profile-modal-actions">
+                <button class="profile-modal-btn secondary" onclick="closeEditProfileModal()">
                     CANCELAR
                 </button>
-                <button class="modal-btn primary" onclick="saveProfileChanges()">
+                <button class="profile-modal-btn primary" onclick="saveProfileChanges()">
                     SALVAR ALTERAÇÕES
                 </button>
             </div>
@@ -1195,28 +1213,28 @@
     </div>
     
     <!-- Modal Editar Servidor -->
-    <div class="modal" id="editServerModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeEditServerModal()">
+    <div class="profile-modal" id="editServerModal">
+        <div class="profile-modal-content">
+            <button class="profile-modal-close" onclick="closeEditServerModal()">
                 <i class="fas fa-times"></i>
             </button>
-            <h2 class="modal-title">EDITAR SERVIDOR</h2>
+            <h2 class="profile-modal-title">EDITAR SERVIDOR</h2>
             
             <input type="hidden" id="editServerId">
             
-            <div class="form-group">
-                <label class="form-label">Nome do Servidor</label>
-                <input type="text" class="form-input" id="editServerName" placeholder="Nome do seu servidor" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Nome do Servidor</label>
+                <input type="text" class="profile-form-input" id="editServerName" placeholder="Nome do seu servidor" required>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Descrição</label>
-                <textarea class="form-textarea" id="editServerDescription" placeholder="Descreva seu servidor..." rows="3" required></textarea>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Descrição</label>
+                <textarea class="profile-form-textarea" id="editServerDescription" placeholder="Descreva seu servidor..." rows="3" required></textarea>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Categoria</label>
-                <select class="form-select" id="editServerCategory" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Categoria</label>
+                <select class="profile-form-select" id="editServerCategory" required>
                     <option value="survival">Survival</option>
                     <option value="creative">Creative</option>
                     <option value="pvp">PvP</option>
@@ -1228,57 +1246,57 @@
                 </select>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">IP do Servidor</label>
-                <input type="text" class="form-input" id="editServerIp" placeholder="exemplo.servidor.com" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">IP do Servidor</label>
+                <input type="text" class="profile-form-input" id="editServerIp" placeholder="exemplo.servidor.com" required>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Porta</label>
-                <input type="text" class="form-input" id="editServerPort" placeholder="25565" value="25565" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Porta</label>
+                <input type="text" class="profile-form-input" id="editServerPort" placeholder="25565" value="25565" required>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Versão do Minecraft</label>
-                <input type="text" class="form-input" id="editServerVersion" placeholder="1.20.1" value="1.20.1" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Versão do Minecraft</label>
+                <input type="text" class="profile-form-input" id="editServerVersion" placeholder="1.20.1" value="1.20.1" required>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Banner do Servidor</label>
-                <div class="form-upload" onclick="document.getElementById('editServerBannerInput').click()">
+            <div class="profile-form-group">
+                <label class="profile-form-label">Banner do Servidor</label>
+                <div class="profile-form-upload" onclick="document.getElementById('editServerBannerInput').click()">
                     <i class="fas fa-cloud-upload-alt"></i>
-                    <p class="form-upload-text">Clique para fazer upload</p>
-                    <p class="form-upload-subtext">PNG, JPG ou GIF (máx. 5MB)</p>
-                    <input type="file" id="editServerBannerInput" accept="image/*,.gif" class="hidden-input">
+                    <p class="profile-form-upload-text">Clique para fazer upload</p>
+                    <p class="profile-form-upload-subtext">PNG, JPG ou GIF (máx. 5MB)</p>
+                    <input type="file" id="editServerBannerInput" accept="image/*,.gif" class="profile-hidden-input">
                 </div>
-                <img id="serverBannerPreview" class="preview-image" src="" alt="Preview">
+                <img id="serverBannerPreview" class="profile-preview-image" src="" alt="Preview">
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Jogadores Online</label>
-                <input type="number" class="form-input" id="editServerPlayers" placeholder="0" min="0" max="999" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Jogadores Online</label>
+                <input type="number" class="profile-form-input" id="editServerPlayers" placeholder="0" min="0" max="999" required>
             </div>
             
-            <div class="form-group">
-                <label class="form-label">Limite de Jogadores</label>
-                <input type="number" class="form-input" id="editServerMaxPlayers" placeholder="100" min="1" max="9999" required>
+            <div class="profile-form-group">
+                <label class="profile-form-label">Limite de Jogadores</label>
+                <input type="number" class="profile-form-input" id="editServerMaxPlayers" placeholder="100" min="1" max="9999" required>
             </div>
             
-            <div class="form-checkbox">
+            <div class="profile-form-checkbox">
                 <input type="checkbox" id="editServerOnline" checked>
                 <label for="editServerOnline">Servidor Online</label>
             </div>
             
-            <div class="loading" id="loadingEditServer">
-                <div class="loading-spinner"></div>
+            <div class="profile-loading" id="loadingEditServer">
+                <div class="profile-loading-spinner"></div>
                 <p>Salvando alterações...</p>
             </div>
             
-            <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeEditServerModal()">
+            <div class="profile-modal-actions">
+                <button class="profile-modal-btn secondary" onclick="closeEditServerModal()">
                     CANCELAR
                 </button>
-                <button class="modal-btn primary" onclick="saveServerChanges()">
+                <button class="profile-modal-btn primary" onclick="saveServerChanges()">
                     SALVAR ALTERAÇÕES
                 </button>
             </div>
@@ -1286,12 +1304,12 @@
     </div>
     
     <!-- Modal Confirmar Exclusão -->
-    <div class="modal" id="deleteConfirmModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeDeleteConfirmModal()">
+    <div class="profile-modal" id="deleteConfirmModal">
+        <div class="profile-modal-content">
+            <button class="profile-modal-close" onclick="closeDeleteConfirmModal()">
                 <i class="fas fa-times"></i>
             </button>
-            <h2 class="modal-title">CONFIRMAR EXCLUSÃO</h2>
+            <h2 class="profile-modal-title">CONFIRMAR EXCLUSÃO</h2>
             
             <p style="color: var(--light); text-align: center; margin-bottom: 30px;">
                 Tem certeza que deseja excluir o servidor <strong id="serverToDeleteName"></strong>?<br>
@@ -1300,16 +1318,16 @@
             
             <input type="hidden" id="serverToDeleteId">
             
-            <div class="loading" id="loadingDelete">
-                <div class="loading-spinner"></div>
+            <div class="profile-loading" id="loadingDelete">
+                <div class="profile-loading-spinner"></div>
                 <p>Excluindo servidor...</p>
             </div>
             
-            <div class="modal-actions">
-                <button class="modal-btn secondary" onclick="closeDeleteConfirmModal()">
+            <div class="profile-modal-actions">
+                <button class="profile-modal-btn secondary" onclick="closeDeleteConfirmModal()">
                     CANCELAR
                 </button>
-                <button class="modal-btn danger" onclick="deleteServer()">
+                <button class="profile-modal-btn danger" onclick="deleteServer()">
                     <i class="fas fa-trash"></i>
                     EXCLUIR SERVIDOR
                 </button>
@@ -1348,7 +1366,7 @@
             document.getElementById('editServerBannerInput').addEventListener('change', handleServerBannerUpload);
             
             // Fechar modais ao clicar fora
-            document.querySelectorAll('.modal').forEach(modal => {
+            document.querySelectorAll('.profile-modal').forEach(modal => {
                 modal.addEventListener('click', function(e) {
                     if (e.target === this) {
                         if (this.id === 'editProfileModal') closeEditProfileModal();
@@ -1384,11 +1402,11 @@
                 console.log('Carregando perfil do usuário:', user.uid);
                 
                 // Atualizar informações básicas
-                document.getElementById('profileName').textContent = user.displayName || 'Usuário';
+                document.getElementById('profileDisplayName').textContent = user.displayName || 'Usuário';
                 document.getElementById('profileEmail').textContent = user.email || '';
                 
                 // Carregar foto de perfil
-                const profileAvatar = document.getElementById('profileAvatar');
+                const profileAvatar = document.getElementById('profileAvatarImg');
                 if (user.photoURL) {
                     profileAvatar.src = user.photoURL;
                 } else {
@@ -1415,6 +1433,20 @@
                     const avatarPreview = document.getElementById('avatarPreview');
                     avatarPreview.src = user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
                     avatarPreview.classList.add('active');
+                } else {
+                    // Criar documento do usuário se não existir
+                    await window.firebase.setDoc(userRef, {
+                        uid: user.uid,
+                        displayName: user.displayName || 'Usuário',
+                        email: user.email || '',
+                        photoURL: user.photoURL || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+                        serversCount: 0,
+                        favoritesCount: 0,
+                        totalPlayers: 0,
+                        totalViews: 0,
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString()
+                    });
                 }
                 
                 console.log('Perfil carregado com sucesso');
@@ -1445,6 +1477,12 @@
                 
                 console.log(`Encontrados ${serversSnapshot.size} servidores`);
                 
+                if (serversSnapshot.empty) {
+                    document.getElementById('loadingServers').classList.remove('active');
+                    document.getElementById('noServers').classList.remove('hidden');
+                    return;
+                }
+                
                 serversSnapshot.forEach(doc => {
                     const serverData = doc.data();
                     
@@ -1463,7 +1501,7 @@
                     // Processar URL da imagem
                     let bannerUrl = serverData.banner || '';
                     if (bannerUrl && !bannerUrl.startsWith('http')) {
-                        bannerUrl = `https://neyrdxxqihgvphuhjqmy.storage.supabase.co/storage/v1/object/public/MineSV%20IMG/${bannerUrl}`;
+                        bannerUrl = window.getSupabaseUrl(bannerUrl);
                     } else if (!bannerUrl) {
                         bannerUrl = `https://picsum.photos/600/300?random=${doc.id}`;
                     }
@@ -1550,52 +1588,52 @@
             noServers.classList.add('hidden');
             
             serversGrid.innerHTML = userServers.map(server => `
-                <div class="server-card">
-                    <div class="server-banner">
+                <div class="my-server-card">
+                    <div class="my-server-banner">
                         <img src="${server.banner}" alt="${server.name}" 
                              onerror="this.onerror=null; this.src='https://picsum.photos/600/300?random=${server.id}'">
-                        <div class="server-status">
-                            <div class="status-dot ${server.online ? '' : 'offline'}"></div>
-                            <div class="status-text">${server.online ? 'ONLINE' : 'OFFLINE'}</div>
+                        <div class="my-server-status">
+                            <div class="my-status-dot ${server.online ? '' : 'offline'}"></div>
+                            <div class="my-status-text">${server.online ? 'ONLINE' : 'OFFLINE'}</div>
                         </div>
                     </div>
                     
-                    <div class="server-content">
-                        <div class="server-header">
-                            <div class="server-icon">
+                    <div class="my-server-content">
+                        <div class="my-server-header">
+                            <div class="my-server-icon">
                                 <i class="fas fa-${getCategoryIcon(server.category)}"></i>
                             </div>
-                            <div class="server-info">
-                                <h3 class="server-title" title="${server.name}">${server.name}</h3>
-                                <span class="server-category">${getCategoryName(server.category)}</span>
+                            <div class="my-server-info">
+                                <h3 class="my-server-title" title="${server.name}">${server.name}</h3>
+                                <span class="my-server-category">${getCategoryName(server.category)}</span>
                             </div>
                         </div>
                         
-                        <div class="server-stats">
-                            <div class="server-stat">
-                                <div class="server-stat-value">${server.players}/${server.maxPlayers}</div>
-                                <div class="server-stat-label">Jogadores</div>
+                        <div class="my-server-stats">
+                            <div class="my-server-stat">
+                                <div class="my-server-stat-value">${server.players}/${server.maxPlayers}</div>
+                                <div class="my-server-stat-label">Jogadores</div>
                             </div>
-                            <div class="server-stat">
-                                <div class="server-stat-value">${server.version}</div>
-                                <div class="server-stat-label">Versão</div>
+                            <div class="my-server-stat">
+                                <div class="my-server-stat-value">${server.version}</div>
+                                <div class="my-server-stat-label">Versão</div>
                             </div>
-                            <div class="server-stat">
-                                <div class="server-stat-value">${server.votes}</div>
-                                <div class="server-stat-label">Votos</div>
+                            <div class="my-server-stat">
+                                <div class="my-server-stat-value">${server.votes}</div>
+                                <div class="my-server-stat-label">Votos</div>
                             </div>
                         </div>
                         
-                        <div class="server-ip">
-                            <span class="ip-text">${server.ip}:${server.port}</span>
+                        <div class="my-server-ip">
+                            <span class="my-ip-text">${server.ip}:${server.port}</span>
                         </div>
                         
-                        <div class="server-actions">
-                            <button class="action-btn edit" onclick="openEditServerModal('${server.id}')">
+                        <div class="my-server-actions">
+                            <button class="my-action-btn edit" onclick="openEditServerModal('${server.id}')">
                                 <i class="fas fa-edit"></i>
                                 EDITAR
                             </button>
-                            <button class="action-btn delete" onclick="confirmDeleteServer('${server.id}', '${server.name}')">
+                            <button class="my-action-btn delete" onclick="confirmDeleteServer('${server.id}', '${server.name.replace(/'/g, "\\'")}')">
                                 <i class="fas fa-trash"></i>
                                 EXCLUIR
                             </button>
@@ -1647,7 +1685,7 @@
             }
         }
         
-        // Upload da foto de perfil
+        // Upload da foto de perfil (direto)
         async function handleAvatarUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1668,23 +1706,27 @@
                 showNotification('Enviando imagem...');
                 
                 // Criar nome único para o arquivo
-                const fileName = `avatars/${currentUser.uid}/${Date.now()}_${file.name}`;
+                const fileName = `avatars/${currentUser.uid}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
                 
                 // Fazer upload para o Supabase
                 const imageUrl = await window.uploadToSupabase(file, fileName);
                 
-                // Atualizar foto no Firebase Auth
-                await updateUserProfilePhoto(imageUrl);
+                // Atualizar foto no Firestore
+                const userRef = window.firebase.doc(window.firebase.db, 'users', currentUser.uid);
+                await window.firebase.updateDoc(userRef, {
+                    photoURL: imageUrl,
+                    lastUpdated: new Date().toISOString()
+                });
                 
                 // Atualizar imagem na página
-                document.getElementById('profileAvatar').src = imageUrl;
+                document.getElementById('profileAvatarImg').src = imageUrl;
                 document.getElementById('avatarPreview').src = imageUrl;
                 
                 showNotification('Foto atualizada com sucesso!');
                 
             } catch (error) {
                 console.error('Erro no upload:', error);
-                showNotification('Erro ao atualizar foto');
+                showNotification('Erro ao atualizar foto: ' + error.message);
             }
         }
         
@@ -1748,25 +1790,6 @@
             reader.readAsDataURL(file);
         }
         
-        // Atualizar foto de perfil no Firebase Auth
-        async function updateUserProfilePhoto(imageUrl) {
-            try {
-                // Aqui você atualizaria o usuário no Firebase Auth
-                // Nota: Para atualizar a foto, precisaríamos do método updateProfile
-                // Mas como estamos em um escopo diferente, vamos atualizar apenas no Firestore
-                
-                const userRef = window.firebase.doc(window.firebase.db, 'users', currentUser.uid);
-                await window.firebase.updateDoc(userRef, {
-                    photoURL: imageUrl,
-                    lastUpdated: new Date().toISOString()
-                });
-                
-            } catch (error) {
-                console.error('Erro ao atualizar foto:', error);
-                throw error;
-            }
-        }
-        
         // Abrir modal de edição de perfil
         function openEditProfileModal() {
             document.getElementById('editProfileModal').classList.add('active');
@@ -1796,7 +1819,8 @@
                 
                 // Upload da nova foto se houver
                 if (currentAvatarFile) {
-                    const fileName = `avatars/${currentUser.uid}/${Date.now()}_${currentAvatarFile.name}`;
+                    showNotification('Enviando nova foto...');
+                    const fileName = `avatars/${currentUser.uid}/${Date.now()}_${currentAvatarFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
                     avatarUrl = await window.uploadToSupabase(currentAvatarFile, fileName);
                 }
                 
@@ -1814,9 +1838,9 @@
                 await window.firebase.updateDoc(userRef, updateData);
                 
                 // Atualizar na página
-                document.getElementById('profileName').textContent = displayName;
+                document.getElementById('profileDisplayName').textContent = displayName;
                 if (avatarUrl) {
-                    document.getElementById('profileAvatar').src = avatarUrl;
+                    document.getElementById('profileAvatarImg').src = avatarUrl;
                 }
                 
                 // Fechar modal e mostrar notificação
@@ -1825,7 +1849,7 @@
                 
             } catch (error) {
                 console.error('Erro ao salvar perfil:', error);
-                showNotification('Erro ao atualizar perfil');
+                showNotification('Erro ao atualizar perfil: ' + error.message);
             } finally {
                 // Esconder loading
                 document.getElementById('loadingEdit').classList.remove('active');
@@ -1904,7 +1928,8 @@
                 
                 // Upload do novo banner se houver
                 if (currentBannerFile) {
-                    const fileName = `servers/${serverId}/${Date.now()}_${currentBannerFile.name}`;
+                    showNotification('Enviando banner...');
+                    const fileName = `servers/${serverId}/${Date.now()}_${currentBannerFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
                     bannerUrl = await window.uploadToSupabase(currentBannerFile, fileName);
                 }
                 
@@ -1934,7 +1959,15 @@
                 if (serverIndex !== -1) {
                     userServers[serverIndex] = {
                         ...userServers[serverIndex],
-                        ...updateData,
+                        name,
+                        description,
+                        category,
+                        ip,
+                        port,
+                        version,
+                        players,
+                        maxPlayers,
+                        online,
                         banner: bannerUrl || userServers[serverIndex].banner
                     };
                     
@@ -1949,7 +1982,7 @@
                 
             } catch (error) {
                 console.error('Erro ao salvar servidor:', error);
-                showNotification('Erro ao atualizar servidor');
+                showNotification('Erro ao atualizar servidor: ' + error.message);
             } finally {
                 // Esconder loading
                 document.getElementById('loadingEditServer').classList.remove('active');
@@ -2003,14 +2036,14 @@
         // Mostrar notificação
         function showNotification(message) {
             // Remover notificação anterior
-            const oldNotification = document.querySelector('.notification');
+            const oldNotification = document.querySelector('.profile-notification');
             if (oldNotification) {
                 oldNotification.remove();
             }
             
             // Criar nova notificação
             const notification = document.createElement('div');
-            notification.className = 'notification';
+            notification.className = 'profile-notification';
             notification.innerHTML = `
                 <i class="fas fa-check-circle" style="color: var(--minecraft-green); font-size: 1.4rem;"></i>
                 <span style="flex: 1;">${message}</span>
@@ -2020,7 +2053,7 @@
             
             // Remover após 3 segundos
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.4s ease forwards';
+                notification.style.animation = 'profile-slideOut 0.4s ease forwards';
                 setTimeout(() => {
                     if (notification.parentNode) {
                         notification.remove();
