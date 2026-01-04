@@ -10,8 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let searchTerm = '';
     let selectedForm = 1;
     let selectedServer = null;
-    let loadingInterval = null;
-    let isLoading = true;
     
     // Inicialização
     async function init() {
@@ -31,69 +29,54 @@ document.addEventListener('DOMContentLoaded', function() {
             // Verificar autenticação
             await checkAuth();
             
-            // Carregar servidores (isso atualizará as estatísticas)
+            // Carregar servidores
             await loadServers();
             
         } catch (error) {
             console.error('Erro na inicialização:', error);
             showNotification('Erro ao carregar dados. Tente novamente.');
         } finally {
-            // Forçar fim do loading após 3 segundos no máximo
-            setTimeout(() => {
-                if (isLoading) {
-                    console.log('Forçando fim do loading...');
-                    finishLoading();
-                }
-            }, 3000);
+            // Garantir que o loading pare após 2.5 segundos no máximo
+            setTimeout(finishLoading, 2500);
         }
     }
     
     // ===== LOADING =====
     function startLoading() {
-        isLoading = true;
+        console.log('⏳ Iniciando loading...');
         document.body.classList.add('loading');
-        simulateProgress();
-    }
-    
-    function simulateProgress() {
+        
+        // Iniciar animação da barra de progresso
         let progress = 0;
         const progressBar = document.getElementById('loadingProgress');
-        
-        if (!progressBar) {
-            console.error('Elemento loadingProgress não encontrado');
-            finishLoading();
-            return;
-        }
-        
-        loadingInterval = setInterval(() => {
-            progress += 1;
-            progressBar.style.width = progress + '%';
-            
-            if (progress >= 100) {
+        const loadingInterval = setInterval(() => {
+            if (progress < 100) {
+                progress += 2;
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+            } else {
                 clearInterval(loadingInterval);
             }
-        }, 20);
+        }, 30);
     }
     
     function finishLoading() {
-        if (!isLoading) return; // Já foi finalizado
+        console.log('✅ Finalizando loading...');
         
-        isLoading = false;
+        // Remover classe de loading do body
+        document.body.classList.remove('loading');
         
-        if (loadingInterval) {
-            clearInterval(loadingInterval);
-        }
-        
+        // Esconder a tela de loading
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) {
             loadingScreen.classList.add('hidden');
-            document.body.classList.remove('loading');
             setTimeout(() => {
                 loadingScreen.style.display = 'none';
             }, 500);
         }
         
-        console.log('✅ Loading finalizado');
+        console.log('🎉 Página totalmente carregada!');
     }
     
     // ===== PARTICLES =====
@@ -102,38 +85,16 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 particlesJS('particles-js', {
                     particles: {
-                        number: {
-                            value: 80,
-                            density: {
-                                enable: true,
-                                value_area: 800
-                            }
-                        },
-                        color: {
-                            value: ["#00ff88", "#7b61ff", "#ff6b6b", "#ffb74d"]
-                        },
-                        shape: {
-                            type: "circle"
-                        },
-                        opacity: {
+                        number: { value: 80 },
+                        color: { value: ["#00ff88", "#7b61ff"] },
+                        shape: { type: "circle" },
+                        opacity: { 
                             value: 0.6,
-                            random: true,
-                            anim: {
-                                enable: true,
-                                speed: 1,
-                                opacity_min: 0.1,
-                                sync: false
-                            }
+                            anim: { enable: true, speed: 1 }
                         },
-                        size: {
+                        size: { 
                             value: 3,
-                            random: true,
-                            anim: {
-                                enable: true,
-                                speed: 2,
-                                size_min: 0.1,
-                                sync: false
-                            }
+                            anim: { enable: true, speed: 2 }
                         },
                         line_linked: {
                             enable: true,
@@ -145,36 +106,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         move: {
                             enable: true,
                             speed: 1.5,
-                            direction: "none",
-                            random: true,
-                            straight: false,
-                            out_mode: "out",
-                            bounce: false,
-                            attract: {
-                                enable: false,
-                                rotateX: 600,
-                                rotateY: 1200
-                            }
+                            direction: "none"
                         }
                     },
                     interactivity: {
-                        detect_on: "canvas",
                         events: {
-                            onhover: {
-                                enable: true,
-                                mode: "grab"
-                            },
-                            onclick: {
-                                enable: true,
-                                mode: "push"
-                            }
+                            onhover: { enable: true, mode: "grab" },
+                            onclick: { enable: true, mode: "push" }
                         }
-                    },
-                    retina_detect: true
+                    }
                 });
                 console.log('✅ Particles inicializados');
             } catch (error) {
-                console.error('❌ Erro ao inicializar particles:', error);
+                console.log('⚠️ Particles não inicializados, continuando...');
             }
         }
     }
@@ -182,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== FIREBASE =====
     async function initFirebase() {
         try {
-            // Carregar Firebase dinamicamente
+            // Importar Firebase dinamicamente
             const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
             const { 
                 getAuth, 
@@ -197,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 query, 
                 orderBy,
                 doc,
-                getDoc,
                 setDoc
             } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
@@ -228,7 +171,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 query,
                 orderBy,
                 doc,
-                getDoc,
                 setDoc
             };
             
@@ -255,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     : '<i class="fas fa-bars"></i>';
             });
             
+            // Fechar menu ao clicar fora
             document.addEventListener('click', function(event) {
                 if (!event.target.closest('.navbar') && navMenu.classList.contains('active')) {
                     navMenu.classList.remove('active');
@@ -264,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Navigation links
+        // Navegação
         document.querySelectorAll('.nav-link').forEach(link => {
             link.addEventListener('click', function(e) {
                 if (this.getAttribute('href').startsWith('#')) {
@@ -273,31 +216,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     const targetElement = document.querySelector(targetId);
                     
                     if (targetElement) {
+                        // Atualizar link ativo
                         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                         this.classList.add('active');
                         
+                        // Scroll suave
                         window.scrollTo({
                             top: targetElement.offsetTop - 80,
                             behavior: 'smooth'
                         });
                         
+                        // Fechar menu mobile se aberto
                         if (navMenu && navMenu.classList.contains('active')) {
                             navMenu.classList.remove('active');
                             document.body.classList.remove('menu-open');
-                            if (menuToggle) menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
                         }
                     }
                 }
             });
         });
         
-        // Login button
+        // Botão de login
         const loginBtn = document.getElementById('loginBtn');
         if (loginBtn) {
             loginBtn.addEventListener('click', signInWithGoogle);
         }
         
-        // Create server button
+        // Botão de criar servidor
         const createBtn = document.getElementById('createBtn');
         if (createBtn) {
             createBtn.addEventListener('click', function(e) {
@@ -309,10 +255,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        // Search inputs
+        // Campo de busca
         const searchInput = document.getElementById('searchInput');
-        const heroSearch = document.getElementById('heroSearch');
-        
         if (searchInput) {
             searchInput.addEventListener('input', function(e) {
                 searchTerm = e.target.value.toLowerCase().trim();
@@ -320,38 +264,38 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
-        if (heroSearch) {
-            heroSearch.addEventListener('input', function(e) {
-                searchTerm = e.target.value.toLowerCase().trim();
-                filterAndDisplayServers();
-            });
-        }
-        
-        // Filter buttons
+        // Filtros
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', function() {
+                // Remover active de todos
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                // Adicionar ao clicado
                 this.classList.add('active');
+                // Atualizar filtro
                 currentFilter = this.dataset.filter;
                 filterAndDisplayServers();
             });
         });
         
-        // Reset filters button
+        // Botão reset filtros
         const resetBtn = document.getElementById('resetFilters');
         if (resetBtn) {
             resetBtn.addEventListener('click', resetFilters);
         }
         
-        // Header scroll effect
+        // Scroll do header
         window.addEventListener('scroll', function() {
             const header = document.getElementById('header');
             if (header) {
-                header.classList.toggle('scrolled', window.scrollY > 100);
+                if (window.scrollY > 100) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
             }
         });
         
-        // Modal close buttons
+        // Fechar modais
         document.querySelectorAll('.modal-close').forEach(btn => {
             btn.addEventListener('click', function() {
                 const modal = this.closest('.modal');
@@ -359,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Close modal on outside click
+        // Fechar modal ao clicar fora
         document.querySelectorAll('.modal').forEach(modal => {
             modal.addEventListener('click', function(e) {
                 if (e.target === this) {
@@ -368,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Form selection
+        // Seleção de formulário
         document.querySelectorAll('.form-option').forEach(option => {
             option.addEventListener('click', function() {
                 const formNumber = parseInt(this.getAttribute('data-form')) || 1;
@@ -383,8 +327,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             window.firebase.onAuthStateChanged(window.firebase.auth, async (user) => {
-                console.log('Estado da autenticação:', user ? 'Usuário logado' : 'Visitante');
-                
                 if (user) {
                     currentUser = user;
                     await saveUserToFirestore(user);
@@ -473,7 +415,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 await loadDemoServers();
             }
             
-            // Atualizar estatísticas na página principal
+            // Atualizar estatísticas
             updateStats();
             
             // Inicializar servidores filtrados
@@ -485,8 +427,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Atualizar servidores em destaque
             updateFeaturedServers();
             
-            // Finalizar loading com sucesso
-            finishLoading();
+            // Atualizar estatísticas no loading
+            updateLoadingStats();
             
         } catch (error) {
             console.error('Erro ao carregar servidores:', error);
@@ -495,9 +437,7 @@ document.addEventListener('DOMContentLoaded', function() {
             filteredServers = [...servers];
             displayServers();
             updateFeaturedServers();
-            
-            // Finalizar loading mesmo com erro
-            finishLoading();
+            updateLoadingStats();
         }
     }
     
@@ -516,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 servers.push({
                     id: doc.id,
                     name: data.name || 'Servidor Sem Nome',
-                    description: data.description || 'Descrição não disponível',
+                    description: data.description || 'Sem descrição',
                     category: data.category || 'survival',
                     ip: data.ip || 'demo.minehost.com',
                     port: data.port || '25565',
@@ -525,7 +465,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     online: data.online !== false,
                     version: data.version || '1.20.1',
                     ownerId: data.ownerId || '',
-                    ownerName: data.ownerName || 'Administrador',
+                    ownerName: data.ownerName || 'Admin',
                     ownerAvatar: data.ownerAvatar || 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
                     banner: data.banner || `https://picsum.photos/600/300?random=${doc.id}`,
                     votes: parseInt(data.votes) || 0,
@@ -534,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
             
-            console.log(`✅ ${servers.length} servidores carregados do Firebase`);
+            console.log(`✅ ${servers.length} servidores carregados`);
             
         } catch (error) {
             console.error('❌ Erro ao carregar do Firebase:', error);
@@ -543,8 +483,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function loadDemoServers() {
-        // Somente usado se não houver Firebase
-        const demoServers = [
+        // Dados de exemplo
+        servers = [
             {
                 id: '1',
                 name: 'SkyBlock Extreme',
@@ -564,8 +504,22 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         ];
         
-        servers = demoServers;
-        console.log(`🎮 ${servers.length} servidores de demonstração carregados`);
+        console.log(`🎮 ${servers.length} servidores de demonstração`);
+    }
+    
+    function updateLoadingStats() {
+        // Atualizar estatísticas na tela de loading
+        const statServers = document.getElementById('statServers');
+        const statPlayers = document.getElementById('statPlayers');
+        const statOnline = document.getElementById('statOnline');
+        
+        const totalServers = servers.length;
+        const onlineServers = servers.filter(s => s.online).length;
+        const totalPlayers = servers.reduce((sum, server) => sum + (server.players || 0), 0);
+        
+        if (statServers) statServers.textContent = totalServers;
+        if (statPlayers) statPlayers.textContent = totalPlayers;
+        if (statOnline) statOnline.textContent = onlineServers;
     }
     
     // ===== SERVER DISPLAY =====
@@ -573,10 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const serversGrid = document.getElementById('serversGrid');
         const noResults = document.getElementById('noResults');
         
-        if (!serversGrid) {
-            console.error('Elemento serversGrid não encontrado');
-            return;
-        }
+        if (!serversGrid) return;
         
         if (filteredServers.length === 0) {
             serversGrid.innerHTML = '';
@@ -654,10 +605,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function filterAndDisplayServers() {
         filteredServers = servers.filter(server => {
+            // Filtrar por categoria
             if (currentFilter !== 'all' && server.category !== currentFilter) {
                 return false;
             }
             
+            // Filtrar por busca
             if (searchTerm) {
                 const searchable = `${server.name} ${server.description} ${server.category} ${getCategoryName(server.category)}`.toLowerCase();
                 if (!searchable.includes(searchTerm)) {
@@ -676,10 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentFilter = 'all';
         
         const searchInput = document.getElementById('searchInput');
-        const heroSearch = document.getElementById('heroSearch');
-        
         if (searchInput) searchInput.value = '';
-        if (heroSearch) heroSearch.value = '';
         
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -701,18 +651,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const onlineServersEl = document.getElementById('onlineServers');
         const totalPlayersEl = document.getElementById('totalPlayers');
         
-        if (totalServersEl) {
-            totalServersEl.textContent = totalServers;
-            console.log('📊 Total de servidores:', totalServers);
-        }
-        if (onlineServersEl) {
-            onlineServersEl.textContent = onlineServers;
-            console.log('📊 Servidores online:', onlineServers);
-        }
-        if (totalPlayersEl) {
-            totalPlayersEl.textContent = totalPlayers.toLocaleString();
-            console.log('📊 Total de jogadores:', totalPlayers);
-        }
+        if (totalServersEl) totalServersEl.textContent = totalServers;
+        if (onlineServersEl) onlineServersEl.textContent = onlineServers;
+        if (totalPlayersEl) totalPlayersEl.textContent = totalPlayers.toLocaleString();
     }
     
     function updateFeaturedServers() {
@@ -736,7 +677,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         featuredGrid.innerHTML = featuredServers.map(server => {
-            const categoryIcon = getCategoryIcon(server.category);
             const categoryName = getCategoryName(server.category);
             
             return `
@@ -836,19 +776,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const codeInput = document.getElementById('connectionCode');
         
         if (codeField && codeInput) {
-            switch(formNumber) {
-                case 1:
-                    codeField.style.display = 'none';
-                    break;
-                case 2:
-                    codeField.style.display = 'block';
-                    codeInput.placeholder = 'Código de segurança gerado';
-                    break;
-                case 3:
-                    codeField.style.display = 'block';
-                    codeInput.placeholder = 'Código personalizado';
-                    break;
-            }
+            codeField.style.display = 'block';
+            codeInput.placeholder = selectedForm === 2 
+                ? 'Código de segurança gerado' 
+                : 'Código personalizado';
         }
     };
     
@@ -859,107 +790,109 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedServer = server;
         
         const modal = document.getElementById('serverModal');
-        const modalBody = modal?.querySelector('.modal-body');
-        const modalTitle = modal?.querySelector('#modalServerName');
-        
-        if (!modal || !modalBody || !modalTitle) return;
+        if (!modal) return;
         
         const categoryName = getCategoryName(server.category);
         
-        modalBody.innerHTML = `
-            <div class="server-details">
-                <div class="detail-banner">
-                    <img src="${server.banner}" alt="${server.name}"
-                         onerror="this.src='https://picsum.photos/800/400?random=${server.id}'">
-                </div>
-                
-                <div class="detail-info">
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-server"></i>
-                            Nome do Servidor
-                        </div>
-                        <div class="detail-value">${server.name}</div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-tag"></i>
-                            Categoria
-                        </div>
-                        <div class="detail-value">${categoryName}</div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-network-wired"></i>
-                            Endereço IP
-                        </div>
-                        <div class="detail-value">${server.ip}:${server.port}</div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-users"></i>
-                            Jogadores Online
-                        </div>
-                        <div class="detail-value">${server.players}/${server.maxPlayers}</div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-code-branch"></i>
-                            Versão
-                        </div>
-                        <div class="detail-value">${server.version}</div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-user"></i>
-                            Proprietário
-                        </div>
-                        <div class="detail-owner">
-                            <img src="${server.ownerAvatar}" alt="${server.ownerName}" class="owner-avatar">
-                            <span class="owner-name">${server.ownerName}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="detail-row">
-                        <div class="detail-label">
-                            <i class="fas fa-signal"></i>
-                            Status
-                        </div>
-                        <div class="detail-value">
-                            <span style="color: ${server.online ? '#00ff88' : '#ff6b6b'}">
-                                ${server.online ? '🟢 ONLINE' : '🔴 OFFLINE'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="detail-description">
-                    <h4><i class="fas fa-align-left"></i> Descrição</h4>
-                    <p>${server.description}</p>
-                </div>
-                
-                <div class="form-actions">
-                    <button class="btn-copy" onclick="window.copyIP('${server.ip}:${server.port}')">
-                        <i class="fas fa-copy"></i>
-                        Copiar IP
-                    </button>
-                    <button class="btn-connect" onclick="window.openFormModal('${server.id}')">
-                        <i class="fas fa-gamepad"></i>
-                        Conectar
-                    </button>
-                </div>
-            </div>
-        `;
+        const modalBody = modal.querySelector('.modal-body');
+        const modalTitle = modal.querySelector('#modalServerName');
         
-        modalTitle.innerHTML = `
-            <i class="fas fa-server"></i>
-            ${server.name}
-        `;
+        if (modalBody && modalTitle) {
+            modalBody.innerHTML = `
+                <div class="server-details">
+                    <div class="detail-banner">
+                        <img src="${server.banner}" alt="${server.name}"
+                             onerror="this.src='https://picsum.photos/800/400?random=${server.id}'">
+                    </div>
+                    
+                    <div class="detail-info">
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-server"></i>
+                                Nome do Servidor
+                            </div>
+                            <div class="detail-value">${server.name}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-tag"></i>
+                                Categoria
+                            </div>
+                            <div class="detail-value">${categoryName}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-network-wired"></i>
+                                Endereço IP
+                            </div>
+                            <div class="detail-value">${server.ip}:${server.port}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-users"></i>
+                                Jogadores Online
+                            </div>
+                            <div class="detail-value">${server.players}/${server.maxPlayers}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-code-branch"></i>
+                                Versão
+                            </div>
+                            <div class="detail-value">${server.version}</div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-user"></i>
+                                Proprietário
+                            </div>
+                            <div class="detail-owner">
+                                <img src="${server.ownerAvatar}" alt="${server.ownerName}" class="owner-avatar">
+                                <span class="owner-name">${server.ownerName}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-row">
+                            <div class="detail-label">
+                                <i class="fas fa-signal"></i>
+                                Status
+                            </div>
+                            <div class="detail-value">
+                                <span style="color: ${server.online ? '#00ff88' : '#ff6b6b'}">
+                                    ${server.online ? '🟢 ONLINE' : '🔴 OFFLINE'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-description">
+                        <h4><i class="fas fa-align-left"></i> Descrição</h4>
+                        <p>${server.description}</p>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button class="btn-copy" onclick="window.copyIP('${server.ip}:${server.port}')">
+                            <i class="fas fa-copy"></i>
+                            Copiar IP
+                        </button>
+                        <button class="btn-connect" onclick="window.openFormModal('${server.id}')">
+                            <i class="fas fa-gamepad"></i>
+                            Conectar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modalTitle.innerHTML = `
+                <i class="fas fa-server"></i>
+                ${server.name}
+            `;
+        }
         
         modal.classList.add('active');
     };
@@ -1046,9 +979,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const ip = selectedServer.ip;
         const port = selectedServer.port;
         
+        // Minecraft deep link
         const minecraftUrl = `minecraft://?addExternalServer=MineHost|${ip}:${port}`;
         window.location.href = minecraftUrl;
         
+        // Fallback
         setTimeout(() => {
             if (document.hasFocus()) {
                 window.copyIP(`${ip}:${port}`);
@@ -1067,9 +1002,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         button.classList.toggle('favorited');
-        const isFavorited = button.classList.contains('favorited');
-        
-        showNotification(isFavorited ? 'Servidor favoritado!' : 'Removido dos favoritos');
+        showNotification(button.classList.contains('favorited') 
+            ? 'Servidor favoritado!' 
+            : 'Removido dos favoritos');
     };
     
     // ===== NOTIFICATION =====
